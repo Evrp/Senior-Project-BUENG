@@ -20,7 +20,6 @@ const fetchSerpData = async (query, dateFilter = null) => {
         engine: 'google_events',
         q: query,
         google_domain: 'google.co.th',
-        hl: 'th',
         htichips: dateFilter ? `date:${dateFilter}` : 'date:week',
         api_key: API_KEY,
       },

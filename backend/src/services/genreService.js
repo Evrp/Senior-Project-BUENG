@@ -260,6 +260,25 @@ export const updateGenresAndFindEvents = async ({
 
         // Construct query q as recommended: "interest in location"
         let searchQuery = subGenreStr;
+        
+        // Improve search query for broad or niche terms
+        const lowerQuery = searchQuery.toLowerCase();
+        if (lowerQuery === 'hangout') {
+          searchQuery = 'Social Events';
+        } else if (lowerQuery === 'volunteer') {
+          searchQuery = 'Charity Events';
+        } else if (lowerQuery === 'badminton' || lowerQuery === 'swimming' || lowerQuery === 'football') {
+          searchQuery += ' Tournament';
+        } else if (lowerQuery === 'shopping' || lowerQuery === 'market') {
+          searchQuery += ' Sales';
+        } else if (lowerQuery === 'drum' || lowerQuery === 'guitar') {
+          searchQuery += ' Concert';
+        } else if (lowerQuery === 'cafe' || lowerQuery === 'workshop' || lowerQuery === 'yoga' || lowerQuery === 'gym') {
+          // Keep as is or just add location, "Events" sometimes breaks these
+        } else if (!lowerQuery.includes('event') && !lowerQuery.includes('fest')) {
+          searchQuery += ' Events';
+        }
+
         if (location) {
           searchQuery += ` in ${location.trim()}`;
         } else {
