@@ -7,6 +7,7 @@ import { UserPhoto } from '../model/userPhoto.js';
 import { UserEvent } from '../model/userevent.model.js';
 import { Friend } from '../model/Friend.js';
 import { Like } from '../model/like.js';
+import { getUserEventsForPreferences } from '../services/eventService.js';
 
 export default function (io) {
   const router = express.Router();
@@ -30,72 +31,8 @@ export default function (io) {
         return res.status(400).json({ message: 'Email is required' });
       }
 
-      const pageNum = parseInt(page, 10);
-      const limitNum = parseInt(limit, 10);
-      const skip = (pageNum - 1) * limitNum;
-
-      const userFilter = await Filter.findOne({ email }).lean();
-      const genreConditions = [];
-      if (userFilter?.subGenres && Object.keys(userFilter.subGenres).length > 0) {
-        for (const [category, subList] of Object.entries(userFilter.subGenres)) {
-          const trimmed = category.trim();
-          if (!trimmed) continue;
-          if (Array.isArray(subList) && subList.length > 0) {
-            genreConditions.push({ [`event.genre.${trimmed}`]: { $in: subList } });
-          } else {
-            genreConditions.push({ [`event.genre.${trimmed}`]: { $exists: true } });
-          }
-        }
-      }
-
-      // 1. Initial Match & Sort by UserEvent.updatedAt to get recently found events first
-      const pipeline = [
-        { $match: { email: email, status: 'active' } },
-        { $sort: { updatedAt: -1 } },
-        {
-          $lookup: {
-            from: 'events',
-            localField: 'eventId',
-            foreignField: '_id',
-            as: 'event'
-          }
-        },
-        { $unwind: '$event' }
-      ];
-
-      // 2. Add Match for Genre Filter (if any)
-      if (genreConditions.length > 0) {
-        pipeline.push({ $match: { $or: genreConditions } });
-      }
-
-      // 3. Count total matching events
-      const countPipeline = [...pipeline, { $count: 'total' }];
-      const countResult = await UserEvent.aggregate(countPipeline);
-      const totalEvents = countResult.length > 0 ? countResult[0].total : 0;
-
-      // 4. Implement Pagination
-      pipeline.push({ $skip: skip });
-      pipeline.push({ $limit: limitNum });
-
-      // 5. Execute Pipeline
-      const aggregatedResults = await UserEvent.aggregate(pipeline);
-
-      const eventsWithScore = aggregatedResults.map(res => {
-        // Unfold 'event' object and attach matchScore & reason
-        const ev = res.event;
-        return {
-          ...ev,
-          matchScore: res.matchScore || 0,
-          matchReason: res.matchReason || ''
-        };
-      });
-
-      return res.status(200).json({
-        events: eventsWithScore,
-        totalPages: Math.ceil(totalEvents / limitNum),
-        currentPage: pageNum,
-        totalEvents,
-      });
+      const result = await getUserEventsForPreferences({ email, page, limit });
+      return res.status(200).json(result);
     } catch (error) {
       console.error('Error fetching events:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
@@ -220,7 +157,9 @@ export default function (io) {
       }
 
       // Fallback logic for photos
-      const usersNeedFallback = gmailUsers.filter((u) => !u.photosOrder || u.photosOrder.length === 0);
+      const usersNeedFallback = gmailUsers.filter(
+        (u) => !u.photosOrder || u.photosOrder.length === 0
+      );
       if (usersNeedFallback.length > 0) {
         const fallbackEmails = usersNeedFallback.map((u) => u.email);
         const latestPhotos = await UserPhoto.aggregate([

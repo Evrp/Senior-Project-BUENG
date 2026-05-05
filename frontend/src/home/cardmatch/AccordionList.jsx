@@ -1,7 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import './AccordionList.css';
-import { FaTimes, FaCalendarAlt, FaMapMarkerAlt, FaSearch, FaFilter, FaChevronDown } from 'react-icons/fa';
+import {
+  FaTimes,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaSearch,
+  FaFilter,
+  FaChevronDown,
+} from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import api from '../../server/api';
@@ -17,44 +24,52 @@ const fetchInitialFilters = async (email) => {
   }
 };
 
-const GenreItem = React.memo(({ genre, itemIdx, genreIdx, selectedLabels, onTabSelect, searchTerm }) => {
-  const filteredTabs = useMemo(() => {
-    if (!searchTerm) return genre.tabs || [];
-    return (genre.tabs || []).filter(tab => {
-      const label = typeof tab === 'string' ? tab : tab.label;
-      return label.toLowerCase().includes(searchTerm.toLowerCase());
-    });
-  }, [genre.tabs, searchTerm]);
+const extractEventsFromResponse = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.events)) return payload.events;
+  return [];
+};
 
-  if (filteredTabs.length === 0) return null;
+const GenreItem = React.memo(
+  ({ genre, itemIdx, genreIdx, selectedLabels, onTabSelect, searchTerm }) => {
+    const filteredTabs = useMemo(() => {
+      if (!searchTerm) return genre.tabs || [];
+      return (genre.tabs || []).filter((tab) => {
+        const label = typeof tab === 'string' ? tab : tab.label;
+        return label.toLowerCase().includes(searchTerm.toLowerCase());
+      });
+    }, [genre.tabs, searchTerm]);
 
-  return (
-    <div className="accordion-genre-section">
-      <span className="accordion-genre-title">{genre.title}</span>
-      <div className="accordion-tabs">
-        {filteredTabs.map((tab) => {
-          const label = typeof tab === 'string' ? tab : tab.label;
-          const icon = typeof tab === 'string' ? null : tab.icon;
-          const isSelected = selectedLabels.some(
-            (sel) => sel.key === `${itemIdx}-${genreIdx}` && sel.label === label
-          );
-          return (
-            <button
-              key={label}
-              className={`accordion-tab ${isSelected ? 'selected' : ''}`}
-              onClick={() => onTabSelect(itemIdx, genreIdx, label)}
-              type="button"
-            >
-              {icon && <span className="tab-icon">{icon}</span>}
-              <span>{label}</span>
-              {isSelected && <FaTimes style={{ fontSize: '10px', marginLeft: '4px' }} />}
-            </button>
-          );
-        })}
+    if (filteredTabs.length === 0) return null;
+
+    return (
+      <div className="accordion-genre-section">
+        <span className="accordion-genre-title">{genre.title}</span>
+        <div className="accordion-tabs">
+          {filteredTabs.map((tab) => {
+            const label = typeof tab === 'string' ? tab : tab.label;
+            const icon = typeof tab === 'string' ? null : tab.icon;
+            const isSelected = selectedLabels.some(
+              (sel) => sel.key === `${itemIdx}-${genreIdx}` && sel.label === label
+            );
+            return (
+              <button
+                key={label}
+                className={`accordion-tab ${isSelected ? 'selected' : ''}`}
+                onClick={() => onTabSelect(itemIdx, genreIdx, label)}
+                type="button"
+              >
+                {icon && <span className="tab-icon">{icon}</span>}
+                <span>{label}</span>
+                {isSelected && <FaTimes style={{ fontSize: '10px', marginLeft: '4px' }} />}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 GenreItem.displayName = 'GenreItem';
 
@@ -78,6 +93,8 @@ const AccordionList = ({ items, setWaiting }) => {
   const [debouncedLocation, setDebouncedLocation] = useState('');
 
   const containerRef = useRef(null);
+  const hydratedFiltersRef = useRef(null);
+
   const queryClient = useQueryClient();
   const email = localStorage.getItem('userEmail');
 
@@ -89,34 +106,47 @@ const AccordionList = ({ items, setWaiting }) => {
     return () => clearTimeout(timer);
   }, [dateFilter, locationFilter]);
 
-  useQuery({
+  const { data: initialFilters } = useQuery({
     queryKey: ['filters', email],
     queryFn: () => fetchInitialFilters(email),
     enabled: !!email,
     staleTime: 1000 * 60 * 5,
-    onSuccess: (data) => {
-      if (data && data.subGenres) {
-        const newSelectedLabels = [];
-        items.forEach((item, itemIdx) => {
-          if (item.genres && Array.isArray(item.genres)) {
-            item.genres.forEach((genre, genreIdx) => {
-              if (data.subGenres[genre.title]) {
-                data.subGenres[genre.title].forEach((sub) => {
-                  newSelectedLabels.push({ key: `${itemIdx}-${genreIdx}`, label: sub });
-                });
-              }
+  });
+
+  useEffect(() => {
+    if (!email || !initialFilters?.subGenres) return;
+
+    const hydrationKey = `${email}:${JSON.stringify(initialFilters.subGenres)}`;
+    if (hydratedFiltersRef.current === hydrationKey) return;
+
+    const newSelectedLabels = [];
+    items.forEach((item, itemIdx) => {
+      if (item.genres && Array.isArray(item.genres)) {
+        item.genres.forEach((genre, genreIdx) => {
+          if (initialFilters.subGenres[genre.title]) {
+            initialFilters.subGenres[genre.title].forEach((sub) => {
+              newSelectedLabels.push({ key: `${itemIdx}-${genreIdx}`, label: sub });
             });
           }
         });
-        setSelectedLabels(newSelectedLabels);
       }
-    },
-  });
+    });
+
+    hydratedFiltersRef.current = hydrationKey;
+
+    setSelectedLabels(newSelectedLabels);
+  }, [email, initialFilters, items]);
 
   const { mutate: mutateSave } = useMutation({
     mutationFn: (variables) => api.post(`/api/update-genres`, variables),
-    onSuccess: (res) => {
-      queryClient.setQueryData(['events', email], res.data);
+    onSuccess: async (res, variables) => {
+      queryClient.setQueryData(['events', email], extractEventsFromResponse(res.data));
+      queryClient.setQueryData(['filters', email], {
+        email,
+        genres: variables.genres,
+        subGenres: variables.subGenres,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['events', email] });
       setWaiting(false);
     },
     onError: () => {
@@ -161,15 +191,6 @@ const AccordionList = ({ items, setWaiting }) => {
     [email, selectedLabels, debouncedDate, debouncedLocation, items, mutateSave, setWaiting]
   );
 
-  useEffect(() => {
-    if (selectedLabels.length > 0 || debouncedLocation || debouncedDate) {
-      const timer = setTimeout(() => {
-        const hasEvents = !!queryClient.getQueryData(['events', email])?.length;
-        handleSave(!hasEvents);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedLabels, debouncedDate, debouncedLocation, handleSave, queryClient, email]);
 
   const handleTabSelect = useCallback((itemIdx, genreIdx, label) => {
     const key = `${itemIdx}-${genreIdx}`;
@@ -208,9 +229,9 @@ const AccordionList = ({ items, setWaiting }) => {
 
   const hasMatches = useMemo(() => {
     if (!genreSearch || !items) return true;
-    return items.some(item => 
-      item.genres?.some(genre => 
-        genre.tabs?.some(tab => {
+    return items.some((item) =>
+      item.genres?.some((genre) =>
+        genre.tabs?.some((tab) => {
           const label = typeof tab === 'string' ? tab : tab.label;
           return label.toLowerCase().includes(genreSearch.toLowerCase());
         })
@@ -246,8 +267,10 @@ const AccordionList = ({ items, setWaiting }) => {
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
           >
-            {DATE_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            {DATE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </select>
         </div>
@@ -265,16 +288,20 @@ const AccordionList = ({ items, setWaiting }) => {
         </div>
 
         <div className="filter-actions-group">
-          <button 
+          <button
             className="manual-search-btn"
             onClick={() => handleSave(true)}
-            disabled={selectedLabels.length === 0}
-            title={selectedLabels.length === 0 ? "Please select a category" : "Search with current filters"}
+            disabled={selectedLabels.length === 0 && !locationFilter.trim() && !dateFilter}
+            title={
+              selectedLabels.length === 0 && !locationFilter.trim() && !dateFilter
+                ? 'Please select a category, location, or date'
+                : 'Search with current filters'
+            }
           >
             <FaSearch />
           </button>
-          
-          <button 
+
+          <button
             className={`drawer-toggle-btn ${selectedLabels.length > 0 ? 'active' : ''}`}
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
           >
@@ -306,28 +333,33 @@ const AccordionList = ({ items, setWaiting }) => {
           <div className="categories-drawer">
             <div className="drawer-header">
               <h3>Personalize Your Experience</h3>
-              <button className="close-drawer" onClick={() => setIsDrawerOpen(false)}><FaTimes /></button>
+              <button className="close-drawer" onClick={() => setIsDrawerOpen(false)}>
+                <FaTimes />
+              </button>
             </div>
-            
+
             <div className="drawer-search-inner">
-               <FaSearch />
-               <input 
-                 type="text" 
-                 placeholder="Search specific interest..." 
-                 value={genreSearch} 
-                 onChange={(e) => setGenreSearch(e.target.value)}
-               />
+              <FaSearch />
+              <input
+                type="text"
+                placeholder="Search specific interest..."
+                value={genreSearch}
+                onChange={(e) => setGenreSearch(e.target.value)}
+              />
             </div>
 
             <div className="drawer-scroll-content">
               {genreSearch && !hasMatches && (
                 <div className="no-matches-suggestion">
                   <p>ไม่พบหมวดหมู่ที่ตรงกัน</p>
-                  <button 
+                  <button
                     className="custom-keyword-search-btn"
                     onClick={() => {
-                      if (!selectedLabels.some(s => s.label === genreSearch)) {
-                        setSelectedLabels(prev => [...prev.slice(0, 1), { key: 'custom-keyword', label: genreSearch }]);
+                      if (!selectedLabels.some((s) => s.label === genreSearch)) {
+                        setSelectedLabels((prev) => [
+                          ...prev.slice(0, 1),
+                          { key: 'custom-keyword', label: genreSearch },
+                        ]);
                       }
                       setGenreSearch('');
                       setIsDrawerOpen(false);
@@ -342,8 +374,8 @@ const AccordionList = ({ items, setWaiting }) => {
             </div>
 
             <div className="drawer-footer">
-              <button 
-                className="clear-all" 
+              <button
+                className="clear-all"
                 onClick={() => {
                   setSelectedLabels([]);
                   setIsDrawerOpen(false);

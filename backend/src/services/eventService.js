@@ -1,7 +1,185 @@
 import { Event } from '../model/event.js';
 import { UserEvent } from '../model/userevent.model.js';
 import { Info } from '../model/info.js';
+import { Filter } from '../model/filter.js';
 import { getModel } from './gemini.js';
+
+const DEFAULT_GENRE_CATEGORY = 'All Categories';
+
+export const normalizeSubGenres = (subGenres) => {
+  if (!subGenres) return {};
+
+  if (Array.isArray(subGenres)) {
+    const values = [
+      ...new Set(
+        subGenres
+          .filter((value) => value != null)
+          .map((value) => String(value).trim())
+          .filter(Boolean)
+      ),
+    ];
+    return values.length > 0 ? { [DEFAULT_GENRE_CATEGORY]: values } : {};
+  }
+
+  if (typeof subGenres !== 'object' && !(subGenres instanceof Map)) {
+    return {};
+  }
+
+  const entries =
+    subGenres instanceof Map ? Array.from(subGenres.entries()) : Object.entries(subGenres);
+
+  return entries.reduce((acc, [category, values]) => {
+    const cleanCategory = String(category).trim();
+    if (!cleanCategory) return acc;
+
+    const valuesArray = Array.isArray(values) ? values : values == null ? [] : [values];
+    acc[cleanCategory] = [
+      ...new Set(
+        valuesArray
+          .filter((value) => value != null)
+          .map((value) => String(value).trim())
+          .filter(Boolean)
+      ),
+    ];
+    return acc;
+  }, {});
+};
+
+export const buildGenreConditions = (subGenres, genreField = 'genre') => {
+  const normalizedSubGenres = normalizeSubGenres(subGenres);
+
+  return Object.entries(normalizedSubGenres)
+    .map(([category, subgenreList]) => {
+      const trimmedCategory = category.trim();
+      if (!trimmedCategory) return null;
+
+      if (!Array.isArray(subgenreList) || subgenreList.length === 0) {
+        return { [`${genreField}.${trimmedCategory}`]: { $exists: true } };
+      }
+
+      const exactCategoryCondition = {
+        [`${genreField}.${trimmedCategory}`]: { $in: subgenreList },
+      };
+
+      const directArrayCondition = {
+        [genreField]: { $in: subgenreList },
+      };
+
+      const genrePath = `$${genreField}`;
+      const genreDocumentExpression = {
+        $cond: [{ $eq: [{ $type: genrePath }, 'object'] }, genrePath, {}],
+      };
+      const anyCategoryCondition = {
+        $expr: {
+          $gt: [
+            {
+              $size: {
+                $filter: {
+                  input: { $objectToArray: genreDocumentExpression },
+                  as: 'genreEntry',
+                  cond: {
+                    $gt: [
+                      {
+                        $size: {
+                          $setIntersection: [
+                            {
+                              $cond: [
+                                { $isArray: '$$genreEntry.v' },
+                                '$$genreEntry.v',
+                                ['$$genreEntry.v'],
+                              ],
+                            },
+                            subgenreList,
+                          ],
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+            0,
+          ],
+        },
+      };
+
+      return { $or: [exactCategoryCondition, directArrayCondition, anyCategoryCondition] };
+    })
+    .filter(Boolean);
+};
+
+export const linkExistingEventsToUser = async ({ email, events }) => {
+  if (!email || !Array.isArray(events) || events.length === 0) return [];
+
+  const eventIds = [...new Set(events.map((event) => event?._id).filter(Boolean))];
+  if (eventIds.length === 0) return [];
+
+  const userEventOps = eventIds.map((eventId) => ({
+    updateOne: {
+      filter: { email, eventId },
+      update: {
+        $set: { status: 'active' },
+        $setOnInsert: {
+          matchScore: 80,
+          matchReason: 'แนะนำจากหมวดหมู่ความสนใจที่คุณเลือก',
+        },
+      },
+      upsert: true,
+    },
+  }));
+
+  await UserEvent.bulkWrite(userEventOps);
+  return eventIds;
+};
+
+export const getUserEventsForPreferences = async ({ email, page = 1, limit = 100 }) => {
+  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+  const limitNum = Math.max(parseInt(limit, 10) || 100, 1);
+  const skip = (pageNum - 1) * limitNum;
+
+  const userFilter = await Filter.findOne({ email }).lean();
+  const genreConditions = buildGenreConditions(userFilter?.subGenres, 'event.genre');
+
+  const pipeline = [
+    { $match: { email, status: 'active' } },
+    { $sort: { updatedAt: -1 } },
+    {
+      $lookup: {
+        from: 'events',
+        localField: 'eventId',
+        foreignField: '_id',
+        as: 'event',
+      },
+    },
+    { $unwind: '$event' },
+  ];
+
+  if (genreConditions.length > 0) {
+    pipeline.push({ $match: { $or: genreConditions } });
+  }
+
+  const countPipeline = [...pipeline, { $count: 'total' }];
+  const countResult = await UserEvent.aggregate(countPipeline);
+  const totalEvents = countResult.length > 0 ? countResult[0].total : 0;
+
+  pipeline.push({ $skip: skip });
+  pipeline.push({ $limit: limitNum });
+
+  const aggregatedResults = await UserEvent.aggregate(pipeline);
+  const events = aggregatedResults.map((res) => ({
+    ...res.event,
+    matchScore: res.matchScore || 0,
+    matchReason: res.matchReason || '',
+  }));
+
+  return {
+    events,
+    totalPages: Math.ceil(totalEvents / limitNum),
+    currentPage: pageNum,
+    totalEvents,
+  };
+};
 
 /**
  * Parses various date formats from SerpApi into a Date object.
@@ -42,7 +220,8 @@ const parseSerpDate = (dateInfo) => {
 export const saveEventsFromSource = async ({ data, email, subGenres }) => {
   try {
     if (!email) throw new Error('Email is required');
-    if (!subGenres || Object.keys(subGenres).length === 0) throw new Error('subGenres is required');
+    const normalizedSubGenres = normalizeSubGenres(subGenres);
+    if (Object.keys(normalizedSubGenres).length === 0) throw new Error('subGenres is required');
 
     const dataTransfer = data?.events_results ?? data;
     if (!Array.isArray(dataTransfer) || dataTransfer.length === 0) {
@@ -66,7 +245,7 @@ export const saveEventsFromSource = async ({ data, email, subGenres }) => {
               address: item.address,
               description: item.description,
               link: item.link,
-              genre: subGenres,
+              genre: normalizedSubGenres,
               image: item.image,
               thumbnail: item.thumbnail,
               venue: item.venue,
@@ -112,7 +291,12 @@ export const saveEventsFromSource = async ({ data, email, subGenres }) => {
 
     // 4. Calculate AI Compatibility Score and Matching Logic
     try {
-      await calculateEventCompatibility({ email, validItems, eventMap, subGenres });
+      await calculateEventCompatibility({
+        email,
+        validItems,
+        eventMap,
+        subGenres: normalizedSubGenres,
+      });
     } catch (aiError) {
       console.error('[AI Event Scoring Error]:', aiError);
     }

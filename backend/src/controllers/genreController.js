@@ -4,7 +4,7 @@ export const updateGenres = async (req, res) => {
   const email = req.user.email;
   const { genres, subGenres, updatedAt, location, date } = req.body;
 
-  if (!email || !genres || !subGenres) {
+  if (!email || subGenres == null) {
     return res.status(400).json({ message: 'Missing genres or subGenres' });
   }
 

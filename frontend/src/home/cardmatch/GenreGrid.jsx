@@ -37,6 +37,14 @@ import {
 } from 'lucide-react';
 import './GenreGrid.css';
 
+const DEFAULT_GENRE_CATEGORY = 'All Categories';
+
+const extractEventsFromResponse = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.events)) return payload.events;
+  return [];
+};
+
 const genres = [
   { id: 'apparel', label: 'Apparel', icon: <Shirt size={20} /> },
   { id: 'accessories', label: 'Accessories', icon: <Diamond size={20} /> },
@@ -90,8 +98,9 @@ const GenreGrid = ({ setWaiting }) => {
       const response = await api.post('/api/update-genres', genreData);
       return response.data;
     },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['events', email], data.events || []);
+    onSuccess: async (data) => {
+      queryClient.setQueryData(['events', email], extractEventsFromResponse(data));
+      await queryClient.invalidateQueries({ queryKey: ['events', email] });
       toast.success('อัปเดตความสนใจเรียบร้อยแล้ว!');
       setWaiting(false);
     },
@@ -110,7 +119,8 @@ const GenreGrid = ({ setWaiting }) => {
     setWaiting(true);
     saveMutation.mutate({
       email,
-      subGenres: selectedGenres,
+      genres: [DEFAULT_GENRE_CATEGORY],
+      subGenres: { [DEFAULT_GENRE_CATEGORY]: selectedGenres },
       updatedAt: new Date().toISOString(),
     });
   };
