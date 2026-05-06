@@ -396,6 +396,7 @@
   /* background: linear-gradient(135deg, #f3f4f6 60%, #e0e7ff 100%); */
   padding: 0 24px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   scroll-behavior: smooth;
   width: 100%;
   position: relative;

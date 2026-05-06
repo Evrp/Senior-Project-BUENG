@@ -2,6 +2,7 @@ import { Filter } from '../model/filter.js';
 import { Event } from '../model/event.js';
 import { InfoMatch } from '../model/infomatch.js';
 import { Gmail } from '../model/gmail.js';
+import { UserEvent } from '../model/userevent.model.js';
 import {
   buildGenreConditions,
   getUserEventsForPreferences,
@@ -171,11 +172,21 @@ export const updateGenresAndFindEvents = async ({ email, genres, subGenres, loca
 
   const user = await Filter.findOne({ email });
 
-  // 3. Exclude Matched Events
+  // 3. Exclude Matched and Seen Events
   const matchedInfos = await InfoMatch.find({
     $or: [{ email: user.email }, { usermatch: user.email }],
   }).select('eventId');
   const matchedEventIds = matchedInfos.map((info) => info.eventId);
+
+  const userEvents = await UserEvent.find({ email: user.email }).select('eventId');
+  const seenEventIds = userEvents.map((ue) => ue.eventId);
+
+  // Exclude all previously interacted/seen events so we only query FRESH events from the DB
+  const excludeEventIds = [...new Set([...matchedEventIds, ...seenEventIds])];
+
+  // We also need titles to exclude SerpApi results we already have in the DB
+  const dbEventsToExclude = await Event.find({ _id: { $in: excludeEventIds } }).select('title').lean();
+  const excludeTitles = new Set(dbEventsToExclude.map(e => e.title));
 
   // 4. Validate and Parse Subgenres
   if (!user.subGenres || (typeof user.subGenres !== 'object' && !(user.subGenres instanceof Map))) {
@@ -191,7 +202,7 @@ export const updateGenresAndFindEvents = async ({ email, genres, subGenres, loca
   const searchPromises = searchTargets.map(async ({ category, subgenres: targetSubgenres }) => {
     const query = {
       email: { $ne: user.email },
-      _id: { $nin: matchedEventIds },
+      _id: { $nin: excludeEventIds }, // Ensure we don't pull deleted or already active ones
     };
 
     const filterAnd = buildCommonFilters({ location, date });
@@ -222,7 +233,7 @@ export const updateGenresAndFindEvents = async ({ email, genres, subGenres, loca
   if (allFoundEvents.length === 0 && (location || date)) {
     const query = {
       email: { $ne: user.email },
-      _id: { $nin: matchedEventIds },
+      _id: { $nin: excludeEventIds },
     };
 
     const filterAnd = buildCommonFilters({ location, date });
@@ -245,7 +256,7 @@ export const updateGenresAndFindEvents = async ({ email, genres, subGenres, loca
     await linkExistingEventsToUser({ email, events: uniqueFoundEvents });
   }
 
-  // 7. Handle Missing Genres (Direct SerpApi Search)
+  // 7. Handle Missing Genres (Direct SerpApi Search with Pagination)
   if (Object.keys(missingSubGenres).length > 0) {
     const serpSearchPromises = [];
     const maxItems = parseInt(process.env.SERP_MAX_ITEMS || '3', 10);
@@ -296,19 +307,38 @@ export const updateGenresAndFindEvents = async ({ email, genres, subGenres, loca
 
         serpSearchPromises.push(
           (async () => {
-            try {
-              // Now passing date to searchEvents (used for htichips)
-              const eventsFound = await serpApiService.searchEvents(searchQuery, date);
+            let start = 0;
+            let pageCount = 0;
+            const maxPages = 4; // Check up to 4 pages (40 results) deep
+            
+            while (pageCount < maxPages) {
+              try {
+                // Pass start parameter for pagination
+                const eventsFound = await serpApiService.searchEvents(searchQuery, date, start);
+                
+                if (!eventsFound || eventsFound.length === 0) {
+                  break; // No more results from Google
+                }
 
-              if (eventsFound && eventsFound.length > 0) {
-                await saveEventsFromSource({
-                  data: eventsFound,
-                  email: user.email,
-                  subGenres: { [category]: [subGenreStr] },
-                });
+                // Filter out events the user has already seen/deleted based on title
+                const freshEvents = eventsFound.filter(e => !excludeTitles.has(e.title));
+
+                if (freshEvents.length > 0) {
+                  await saveEventsFromSource({
+                    data: freshEvents,
+                    email: user.email,
+                    subGenres: { [category]: [subGenreStr] },
+                  });
+                  break; // Found fresh events, stop paginating
+                } else {
+                  // All events on this page were already seen, fetch next page
+                  start += 10;
+                  pageCount++;
+                }
+              } catch (searchError) {
+                console.error(`⚠️ SerpApi search failed for "${searchQuery}" at offset ${start}:`, searchError.message);
+                break;
               }
-            } catch (searchError) {
-              console.error(`⚠️ SerpApi search failed for "${searchQuery}":`, searchError.message);
             }
           })()
         );

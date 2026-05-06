@@ -119,8 +119,8 @@ export const linkExistingEventsToUser = async ({ email, events }) => {
     updateOne: {
       filter: { email, eventId },
       update: {
-        $set: { status: 'active' },
         $setOnInsert: {
+          status: 'active',
           matchScore: 80,
           matchReason: 'แนะนำจากหมวดหมู่ความสนใจที่คุณเลือก',
         },
@@ -292,7 +292,7 @@ export const saveEventsFromSource = async ({ data, email, subGenres }) => {
         updateOne: {
           filter: { email, eventId },
           update: {
-            $set: { status: 'active' },
+            $setOnInsert: { status: 'active' },
           },
           upsert: true,
         },

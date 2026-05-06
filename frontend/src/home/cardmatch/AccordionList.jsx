@@ -146,7 +146,6 @@ const AccordionList = ({ items, setWaiting }) => {
         genres: variables.genres,
         subGenres: variables.subGenres,
       });
-      await queryClient.invalidateQueries({ queryKey: ['events', email] });
       setWaiting(false);
     },
     onError: () => {

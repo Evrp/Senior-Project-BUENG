@@ -3,30 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../server/api';
 import './Eventlist.css';
 import { useTheme } from '../../context/themecontext';
-// import { useSocket } from '../../context/make.com'; // Removed for direct flow
 import { MdFavorite, MdFavoriteBorder, MdStar } from 'react-icons/md';
 import { FiCalendar, FiX, FiMapPin, FiClock, FiList, FiFilter } from 'react-icons/fi';
 import { TbFileDescription, TbTicket } from 'react-icons/tb';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import SocialProof from './SocialProof';
-
-// Helper function to fetch events
-const fetchEvents = async (email) => {
-  try {
-    const res = await api.get(`/api/events/${encodeURIComponent(email)}`, {
-      params: { limit: 100 },
-    });
-    return res.data.events || []; // Assuming res.data is { events: [], ... }
-  } catch (error) {
-    if (error.response && error.response.status === 404) {
-      toast.success('ไม่มีกิจกรรมในขณะนี้');
-      return []; // Return empty array on 404
-    }
-    toast.error('เกิดข้อผิดพลาดในการโหลดกิจกรรม');
-    throw new Error(error.response?.data?.message || error.message); // Re-throw for React Query to handle
-  }
-};
 
 // Helper function to fetch favorite events
 const fetchFavoriteEvents = async (email) => {
@@ -54,7 +36,6 @@ const fetchAllHistoryEvents = async (email) => {
       subGenres: {},
       searchMode: 'all_history',
     });
-    // Backend may return events as array directly or as { events: [] }
     const data = res.data;
     if (Array.isArray(data)) return data;
     if (data?.events && Array.isArray(data.events)) return data.events;
@@ -65,7 +46,6 @@ const fetchAllHistoryEvents = async (email) => {
   }
 };
 
-// Moved EventListContent outside of EventList to prevent re-mounting on re-renders.
 const EventListContent = ({
   isDarkMode,
   events,
@@ -113,106 +93,91 @@ const EventListContent = ({
       {/* Filter and Sort Header */}
       <div
         style={{
-          position: 'relative',
-          marginBottom: '24px',
           display: 'flex',
-          flexDirection: 'column',
+          gap: '10px',
+          marginBottom: '20px',
+          justifyContent: 'center',
           alignItems: 'center',
-          gap: '15px',
+          flexWrap: 'wrap',
           width: '100%'
         }}
       >
-        {/* Filter Buttons */}
-        <div
+        <button
+          onClick={() => setFilterType('all')}
           style={{
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: '1px solid #ccc',
+            background: filterType === 'all' ? '#000' : 'transparent',
+            color: filterType === 'all' ? '#fff' : 'inherit',
+            cursor: 'pointer',
             display: 'flex',
-            gap: '10px',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            maxWidth: 'calc(100% - 200px)' // Leave space for sort dropdown on desktop
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: 'bold',
           }}
         >
-          <button
-            onClick={() => setFilterType('all')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              border: '1px solid #ccc',
-              background: filterType === 'all' ? '#000' : 'transparent',
-              color: filterType === 'all' ? '#fff' : 'inherit',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: 'bold',
-            }}
-          >
-            <FiList size={18} /> ทั้งหมด
-          </button>
-          <button
-            onClick={() => setFilterType('liked')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              border: '1px solid #ccc',
-              background: filterType === 'liked' ? '#000' : 'transparent',
-              color: filterType === 'liked' ? '#fff' : 'inherit',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: 'bold',
-            }}
-          >
-            <MdFavoriteBorder size={18} /> ถูกใจ
-          </button>
-          <button
-            onClick={() => setFilterType('matched')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              border: '1px solid #ccc',
-              background: filterType === 'matched' ? '#ff4b4b' : 'transparent',
-              color: filterType === 'matched' ? '#fff' : 'inherit',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: 'bold',
-            }}
-          >
-            <MdFavorite size={18} color={filterType === 'matched' ? '#fff' : '#ff4b4b'} /> Match
-          </button>
-          <button
-            onClick={() => setFilterType('history')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              border: '1px solid #ccc',
-              background: filterType === 'history' ? '#4f46e5' : 'transparent',
-              color: filterType === 'history' ? '#fff' : 'inherit',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: 'bold',
-            }}
-          >
-            <FiClock size={18} /> เคยค้นหาทั้งหมด
-          </button>
-        </div>
+          <FiList size={18} /> ทั้งหมด
+        </button>
+        <button
+          onClick={() => setFilterType('liked')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: '1px solid #ccc',
+            background: filterType === 'liked' ? '#000' : 'transparent',
+            color: filterType === 'liked' ? '#fff' : 'inherit',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: 'bold',
+          }}
+        >
+          <MdFavoriteBorder size={18} /> ถูกใจ
+        </button>
+        <button
+          onClick={() => setFilterType('matched')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: '1px solid #ccc',
+            background: filterType === 'matched' ? '#ff4b4b' : 'transparent',
+            color: filterType === 'matched' ? '#fff' : 'inherit',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: 'bold',
+          }}
+        >
+          <MdFavorite size={18} color={filterType === 'matched' ? '#fff' : '#ff4b4b'} /> Match
+        </button>
+        <button
+          onClick={() => setFilterType('history')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: '1px solid #ccc',
+            background: filterType === 'history' ? '#4f46e5' : 'transparent',
+            color: filterType === 'history' ? '#fff' : 'inherit',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: 'bold',
+          }}
+        >
+          <FiClock size={18} /> เคยค้นหาทั้งหมด
+        </button>
 
         {/* Sort Dropdown */}
         <div 
           className="sort-dropdown-container"
           style={{ 
-            position: 'absolute', 
-            right: 0, 
-            top: 0,
             display: 'flex', 
             alignItems: 'center', 
             gap: '8px',
-            zIndex: 10
           }}
         >
           <FiFilter size={18} color={isDarkMode ? '#ecebfa' : '#4b5563'} />
@@ -357,12 +322,6 @@ const EventListContent = ({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {/* <img
-                      src={event.event_location_map.image}
-                      alt="Map"
-                      style={{ width: "100%", borderRadius: "8px", border: "1px solid #ddd", maxHeight: "150px", objectFit: "cover" }}
-                      loading="lazy"
-                    /> */}
                     </a>
                   </div>
                 )}
@@ -468,18 +427,13 @@ const EventList = ({ waiting }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const email = localStorage.getItem('userEmail');
   const { isDarkMode } = useTheme();
-  // const socket = useSocket(); // Removed for direct flow
   const queryClient = useQueryClient();
 
-  const {
-    data: events = [],
-    isLoading: isLoadingEvents,
-    isError: isErrorEvents,
-  } = useQuery({
+  // ONLY rely on React Query cache set by AccordionList, don't fetch from DB on load
+  const { data: events = [] } = useQuery({
     queryKey: ['events', email],
-    queryFn: () => fetchEvents(email),
-    enabled: !!email,
-    staleTime: 1000 * 60 * 2,
+    enabled: false,
+    initialData: [],
   });
 
   const { data: favoriteEvents = [] } = useQuery({
@@ -507,23 +461,6 @@ const EventList = ({ waiting }) => {
     enabled: !!email && filterType === 'history',
     staleTime: 1000 * 60 * 2,
   });
-
-  // Socket listener removed as per direct API response refactor
-  // -----------------------------------------------------------
-  // useEffect(() => {
-  //   if (!socket) return;
-  //
-  //   const handleEventsUpdated = () => {
-  //     setWaiting(false);
-  //     queryClient.invalidateQueries({ queryKey: ["events", email] });
-  //   };
-  //
-  //   socket.on("events_updated", handleEventsUpdated);
-  //
-  //   return () => {
-  //     socket.off("events_updated", handleEventsUpdated);
-  //   };
-  // }, [socket, queryClient, email, setWaiting]);
 
   const likeMutation = useMutation({
     mutationFn: (variables) => api.post(`/api/like`, variables),
@@ -556,9 +493,6 @@ const EventList = ({ waiting }) => {
       );
       return { previousFavorites };
     },
-    onSuccess: () => {
-      // Optional: Can show a success toast if desired, but UI is already updated.
-    },
     onError: (err, newData, context) => {
       queryClient.setQueryData(['favorites', email], context.previousFavorites);
       console.error('❌ Error: เกิดข้อผิดพลาดในการยกเลิกไลค์', err);
@@ -569,36 +503,37 @@ const EventList = ({ waiting }) => {
     },
   });
 
-  const useListRefetchingMutation = (mutationFn, successMessage, errorMessage) => {
-    return useMutation({
-      // This is the line that needs to be moved
-      mutationFn,
-      onSuccess: () => {
-        toast.success(successMessage);
-        queryClient.invalidateQueries({ queryKey: ['events', email] });
-        queryClient.invalidateQueries({ queryKey: ['favorites', email] });
-      },
-      onError: (error) => {
-        console.error(`❌ Error: ${errorMessage}`, error);
-        toast.error(errorMessage);
-      },
-    });
-  };
+  const deleteMutation = useMutation({
+    mutationFn: (eventId) => api.delete(`/api/events/${eventId}`, { data: { email: email } }),
+    onSuccess: (data, eventId) => {
+      toast.success('ลบกิจกรรมสำเร็จ');
+      // Update state without refetching from DB
+      queryClient.setQueryData(['events', email], (old = []) => old.filter(e => e._id !== eventId));
+      queryClient.setQueryData(['historyEvents', email], (old = []) => old.filter(e => e._id !== eventId));
+      queryClient.invalidateQueries({ queryKey: ['favorites', email] });
+    },
+    onError: (error) => {
+      console.error('❌ Error: เกิดข้อผิดพลาดในการลบกิจกรรม', error);
+      toast.error('เกิดข้อผิดพลาดในการลบกิจกรรม');
+    },
+  });
 
-  const deleteMutation = useListRefetchingMutation(
-    (eventId) => api.delete(`/api/events/${eventId}`, { data: { email: email } }), // Pass email in request body
-    'ลบกิจกรรมสำเร็จ',
-    'เกิดข้อผิดพลาดในการลบกิจกรรม'
-  );
-
-  const deleteAllMutation = useListRefetchingMutation(
-    () => api.delete(`/api/events/user/${email}`),
-    'ลบกิจกรรมทั้งหมดสำเร็จ',
-    'เกิดข้อผิดพลาดในการลบกิจกรรมทั้งหมด'
-  );
+  const deleteAllMutation = useMutation({
+    mutationFn: () => api.delete(`/api/events/user/${email}`),
+    onSuccess: () => {
+      toast.success('ลบกิจกรรมทั้งหมดสำเร็จ');
+      // Clear state without refetching from DB
+      queryClient.setQueryData(['events', email], []);
+      queryClient.setQueryData(['historyEvents', email], []);
+      queryClient.invalidateQueries({ queryKey: ['favorites', email] });
+    },
+    onError: (error) => {
+      console.error('❌ Error: เกิดข้อผิดพลาดในการลบกิจกรรมทั้งหมด', error);
+      toast.error('เกิดข้อผิดพลาดในการลบกิจกรรมทั้งหมด');
+    },
+  });
 
   const handleLike = (eventId) => {
-    // Ensure events is an array before using it
     likeMutation.mutate({ userEmail: email, eventId });
   };
 
@@ -617,7 +552,7 @@ const EventList = ({ waiting }) => {
     }
   };
 
-  if (waiting || isLoadingEvents) {
+  if (waiting) {
     return (
       <div className={`event-container ${isDarkMode ? 'dark-mode' : ''}`}>
         <div className="event-list">
@@ -628,7 +563,6 @@ const EventList = ({ waiting }) => {
       </div>
     );
   }
-  if (isErrorEvents) return <p className="loading-text">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>;
 
   return (
     <>
@@ -640,7 +574,6 @@ const EventList = ({ waiting }) => {
         <FiCalendar />
       </button>
       <div className="eventlist-desktop-view">
-        {/* Ensure events is an array before passing to content */}
         <EventListContent
           isDarkMode={isDarkMode}
           events={Array.isArray(events) ? events : []}
