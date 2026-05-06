@@ -5,7 +5,7 @@ import './Eventlist.css';
 import { useTheme } from '../../context/themecontext';
 // import { useSocket } from '../../context/make.com'; // Removed for direct flow
 import { MdFavorite, MdFavoriteBorder, MdStar } from 'react-icons/md';
-import { FiCalendar, FiX, FiMapPin } from 'react-icons/fi';
+import { FiCalendar, FiX, FiMapPin, FiClock, FiList, FiFilter } from 'react-icons/fi';
 import { TbFileDescription, TbTicket } from 'react-icons/tb';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
@@ -45,10 +45,32 @@ const fetchMatchedEventIds = async (email) => {
   }
 };
 
+// Helper function to fetch all history events
+const fetchAllHistoryEvents = async (email) => {
+  try {
+    const res = await api.post(`/api/update-genres`, {
+      email,
+      genres: [],
+      subGenres: {},
+      searchMode: 'all_history',
+    });
+    // Backend may return events as array directly or as { events: [] }
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (data?.events && Array.isArray(data.events)) return data.events;
+    return [];
+  } catch (error) {
+    console.error('Failed to fetch history events', error);
+    return [];
+  }
+};
+
 // Moved EventListContent outside of EventList to prevent re-mounting on re-renders.
 const EventListContent = ({
   isDarkMode,
   events,
+  historyEvents,
+  isLoadingHistory,
   favoriteEvents,
   matchedEventIds,
   filterType,
@@ -58,84 +80,179 @@ const EventListContent = ({
   handleDelete,
   handleDeleteAll,
 }) => {
-  const filteredEvents = (Array.isArray(events) ? events : []).filter((event) => {
-    if (filterType === 'liked') {
-      return favoriteEvents.includes(event._id) && !matchedEventIds.includes(event._id);
-    } else if (filterType === 'matched') {
-      return favoriteEvents.includes(event._id) && matchedEventIds.includes(event._id);
+  const [sortOption, setSortOption] = useState('matchScore');
+
+  const baseEvents = filterType === 'history'
+    ? (Array.isArray(historyEvents) ? historyEvents : [])
+    : (Array.isArray(events) ? events : []).filter((event) => {
+        if (filterType === 'liked') {
+          return favoriteEvents.includes(event._id) && !matchedEventIds.includes(event._id);
+        } else if (filterType === 'matched') {
+          return favoriteEvents.includes(event._id) && matchedEventIds.includes(event._id);
+        }
+        return true; // 'all'
+      });
+
+  const displayEvents = [...baseEvents].sort((a, b) => {
+    if (sortOption === 'matchScore') {
+      return (b.matchScore || 0) - (a.matchScore || 0);
+    } else if (sortOption === 'dateAsc') {
+      const dateA = a.date ? new Date(a.date).getTime() : Infinity;
+      const dateB = b.date ? new Date(b.date).getTime() : Infinity;
+      return dateA - dateB;
+    } else if (sortOption === 'dateDesc') {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
     }
-    return true; // 'all'
+    return 0;
   });
 
   return (
     <div className={`event-container ${isDarkMode ? 'dark-mode' : ''}`}>
-      {/* Filter Buttons */}
+      {/* Filter and Sort Header */}
       <div
         style={{
+          position: 'relative',
+          marginBottom: '24px',
           display: 'flex',
-          gap: '10px',
-          marginBottom: '20px',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '15px',
+          width: '100%'
         }}
       >
-        <button
-          onClick={() => setFilterType('all')}
+        {/* Filter Buttons */}
+        <div
           style={{
-            padding: '8px 16px',
-            borderRadius: '20px',
-            border: '1px solid #ccc',
-            background: filterType === 'all' ? '#000' : 'transparent',
-            color: filterType === 'all' ? '#fff' : 'inherit',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-          }}
-        >
-          ทั้งหมด
-        </button>
-        <button
-          onClick={() => setFilterType('liked')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '20px',
-            border: '1px solid #ccc',
-            background: filterType === 'liked' ? '#000' : 'transparent',
-            color: filterType === 'liked' ? '#fff' : 'inherit',
-            cursor: 'pointer',
             display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontWeight: 'bold',
+            gap: '10px',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            maxWidth: 'calc(100% - 200px)' // Leave space for sort dropdown on desktop
           }}
         >
-          <MdFavoriteBorder size={18} /> ถูกใจ
-        </button>
-        <button
-          onClick={() => setFilterType('matched')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '20px',
-            border: '1px solid #ccc',
-            background: filterType === 'matched' ? '#ff4b4b' : 'transparent',
-            color: filterType === 'matched' ? '#fff' : 'inherit',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontWeight: 'bold',
+          <button
+            onClick={() => setFilterType('all')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '20px',
+              border: '1px solid #ccc',
+              background: filterType === 'all' ? '#000' : 'transparent',
+              color: filterType === 'all' ? '#fff' : 'inherit',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 'bold',
+            }}
+          >
+            <FiList size={18} /> ทั้งหมด
+          </button>
+          <button
+            onClick={() => setFilterType('liked')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '20px',
+              border: '1px solid #ccc',
+              background: filterType === 'liked' ? '#000' : 'transparent',
+              color: filterType === 'liked' ? '#fff' : 'inherit',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 'bold',
+            }}
+          >
+            <MdFavoriteBorder size={18} /> ถูกใจ
+          </button>
+          <button
+            onClick={() => setFilterType('matched')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '20px',
+              border: '1px solid #ccc',
+              background: filterType === 'matched' ? '#ff4b4b' : 'transparent',
+              color: filterType === 'matched' ? '#fff' : 'inherit',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 'bold',
+            }}
+          >
+            <MdFavorite size={18} color={filterType === 'matched' ? '#fff' : '#ff4b4b'} /> Match
+          </button>
+          <button
+            onClick={() => setFilterType('history')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '20px',
+              border: '1px solid #ccc',
+              background: filterType === 'history' ? '#4f46e5' : 'transparent',
+              color: filterType === 'history' ? '#fff' : 'inherit',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 'bold',
+            }}
+          >
+            <FiClock size={18} /> เคยค้นหาทั้งหมด
+          </button>
+        </div>
+
+        {/* Sort Dropdown */}
+        <div 
+          className="sort-dropdown-container"
+          style={{ 
+            position: 'absolute', 
+            right: 0, 
+            top: 0,
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            zIndex: 10
           }}
         >
-          <MdFavorite size={18} color={filterType === 'matched' ? '#fff' : '#ff4b4b'} /> Match
-        </button>
+          <FiFilter size={18} color={isDarkMode ? '#ecebfa' : '#4b5563'} />
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '12px',
+              border: `1px solid ${isDarkMode ? '#554eea44' : '#ccc'}`,
+              background: isDarkMode ? '#2d2e3a' : '#fff',
+              color: isDarkMode ? '#ecebfa' : '#333',
+              cursor: 'pointer',
+              outline: 'none',
+              fontWeight: '500',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+            }}
+          >
+            <option value="matchScore">คะแนนที่เหมาะสม</option>
+            <option value="dateAsc">จัดงาน (ใกล้สุด)</option>
+            <option value="dateDesc">จัดงาน (ไกลสุด)</option>
+          </select>
+        </div>
       </div>
 
-      {filteredEvents.length === 0 ? ( // Fixed bug: was events.length < 0
+      {filterType === 'history' && isLoadingHistory ? (
+        <div className="event-list">
+          {[...Array(4)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : displayEvents.length === 0 ? (
         <div className="eventlist-empty-loading">
-          <div className="eventlist-empty-text">ไม่พบกิจกรรมในหมวดหมู่นี้</div>
+          <div className="eventlist-empty-text">
+            {filterType === 'history' ? 'ยังไม่มีประวัติการค้นหากิจกรรม' : 'ไม่พบกิจกรรมในหมวดหมู่นี้'}
+          </div>
         </div>
       ) : (
         <div className="event-list">
-          {filteredEvents.map((event) => (
+          {displayEvents.map((event) => (
             <div key={event._id} className="event-card">
               <img
                 className="event-image"
@@ -381,6 +498,16 @@ const EventList = ({ waiting }) => {
 
   const [filterType, setFilterType] = useState('all');
 
+  const {
+    data: historyEvents = [],
+    isLoading: isLoadingHistory,
+  } = useQuery({
+    queryKey: ['historyEvents', email],
+    queryFn: () => fetchAllHistoryEvents(email),
+    enabled: !!email && filterType === 'history',
+    staleTime: 1000 * 60 * 2,
+  });
+
   // Socket listener removed as per direct API response refactor
   // -----------------------------------------------------------
   // useEffect(() => {
@@ -517,6 +644,8 @@ const EventList = ({ waiting }) => {
         <EventListContent
           isDarkMode={isDarkMode}
           events={Array.isArray(events) ? events : []}
+          historyEvents={Array.isArray(historyEvents) ? historyEvents : []}
+          isLoadingHistory={isLoadingHistory && filterType === 'history'}
           favoriteEvents={favoriteEvents}
           matchedEventIds={matchedEventIds}
           filterType={filterType}
@@ -547,9 +676,10 @@ const EventList = ({ waiting }) => {
           </div>
           <div className="eventlist-modal-content">
             <EventListContent
-              // Ensure events is an array before passing to content
               isDarkMode={isDarkMode}
               events={Array.isArray(events) ? events : []}
+              historyEvents={Array.isArray(historyEvents) ? historyEvents : []}
+              isLoadingHistory={isLoadingHistory && filterType === 'history'}
               favoriteEvents={favoriteEvents}
               matchedEventIds={matchedEventIds}
               filterType={filterType}
@@ -571,7 +701,12 @@ export default EventList;
 EventListContent.propTypes = {
   isDarkMode: PropTypes.bool.isRequired,
   events: PropTypes.array.isRequired,
+  historyEvents: PropTypes.array.isRequired,
+  isLoadingHistory: PropTypes.bool.isRequired,
   favoriteEvents: PropTypes.array.isRequired,
+  matchedEventIds: PropTypes.array.isRequired,
+  filterType: PropTypes.string.isRequired,
+  setFilterType: PropTypes.func.isRequired,
   handleUnlike: PropTypes.func.isRequired,
   handleLike: PropTypes.func.isRequired,
   handleDelete: PropTypes.func.isRequired,

@@ -139,11 +139,21 @@ const markMissingSubgenre = (missingSubGenres, category, subgenres) => {
   });
 };
 
-export const updateGenresAndFindEvents = async ({ email, genres, subGenres, location, date }) => {
+export const updateGenresAndFindEvents = async ({ email, genres, subGenres, location, date, searchMode }) => {
   // 1. Validation
   const emailValid = await Gmail.findOne({ email });
   if (!emailValid) {
     throw new Error('USER_NOT_FOUND');
+  }
+
+  // Handle all_history mode: return all previously searched events for this user
+  if (searchMode === 'all_history') {
+    const { events } = await getUserEventsForPreferences({
+      email,
+      page: 1,
+      limit: RESPONSE_EVENT_LIMIT,
+    });
+    return events;
   }
 
   const normalizedSubGenres = normalizeSubGenres(subGenres);

@@ -143,7 +143,7 @@ export const getUserEventsForPreferences = async ({ email, page = 1, limit = 100
 
   const pipeline = [
     { $match: { email, status: 'active' } },
-    { $sort: { updatedAt: -1 } },
+    { $sort: { matchScore: -1, updatedAt: -1 } },
     {
       $lookup: {
         from: 'events',
@@ -190,19 +190,33 @@ const parseSerpDate = (dateInfo) => {
   if (!dateInfo) return null;
   if (dateInfo instanceof Date) return dateInfo;
 
+  const currentYear = new Date().getFullYear();
+
   if (typeof dateInfo === 'string') {
     const d = new Date(dateInfo);
+    // If year parsed as 2001 and the original string didn't have 2001, append current year
+    if (!isNaN(d.getTime()) && d.getFullYear() === 2001 && !dateInfo.includes('2001')) {
+      const fixedD = new Date(`${dateInfo} ${currentYear}`);
+      if (!isNaN(fixedD.getTime())) return fixedD;
+    }
     return isNaN(d.getTime()) ? null : d;
   }
 
   if (typeof dateInfo === 'object') {
     if (dateInfo.start_date) {
-      const d = new Date(dateInfo.start_date);
+      // Append current year to start_date, which is usually like "May 9"
+      let d = new Date(`${dateInfo.start_date} ${currentYear}`);
+      if (!isNaN(d.getTime())) return d;
+      
+      d = new Date(dateInfo.start_date);
       if (!isNaN(d.getTime())) return d;
     }
     if (dateInfo.when) {
-      const year = new Date().getFullYear();
-      const d = new Date(`${dateInfo.when} ${year}`);
+      // Try to parse 'when' string appending year
+      let d = new Date(`${dateInfo.when} ${currentYear}`);
+      if (!isNaN(d.getTime())) return d;
+
+      d = new Date(dateInfo.when);
       if (!isNaN(d.getTime())) return d;
     }
   }

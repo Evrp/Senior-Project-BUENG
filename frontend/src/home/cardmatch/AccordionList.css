@@ -339,6 +339,7 @@
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translate(-50%, -45%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+@keyframes slideUpMobile { from { opacity: 0; transform: translateY(10%); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 900px) {
   .compact-filter-bar {
@@ -367,7 +368,16 @@
     border-top: 1px solid var(--border-color);
   }
   .drawer-toggle-btn { flex: 1; justify-content: center; }
-  .categories-drawer { bottom: 0; top: auto; left: 0; transform: none; width: 100%; border-radius: 24px 24px 0 0; max-height: 90vh; }
+  .categories-drawer { 
+    bottom: 0; 
+    top: auto; 
+    left: 0; 
+    transform: none; 
+    width: 100%; 
+    border-radius: 24px 24px 0 0; 
+    max-height: 90vh; 
+    animation: slideUpMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
   .btn-label { display: block !important; }
 }
 
