@@ -225,25 +225,52 @@ Output Format: JSON
     const model = getModel('MATCHING', { systemInstruction: systemPrompt });
 
     const promptText = `User ปัจจุบัน: "${profileDescription}"\nผู้ใช้อื่นๆ (กรองตามสัญญาณความสนใจแล้ว): ${JSON.stringify(userListForAI)}`;
+    
+    console.log(`\n========== 🔍 [AI Match Data Log] ==========`);
+    console.log(`[Input] User: ${userEmail}`);
+    console.log(`[Input] Profile: "${profileDescription}"`);
+    console.log(`[Input] Comparing with ${userListForAI.length} other users...`);
+
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: promptText }] }],
       generationConfig: { temperature: 0.7, responseMimeType: 'application/json' },
     });
 
-    const aiResponse = JSON.parse(result.response.text());
+    const rawResponse = result.response.text();
+    console.log(`[AI Raw Response]:\n`, rawResponse);
+    
+    let aiResponse = {};
+    try {
+      aiResponse = JSON.parse(rawResponse);
+    } catch (e) {
+      console.error(`[AI JSON Parse Error]:`, e.message);
+    }
+    
     const aiMatches = aiResponse.matches || [];
 
     // 3. Final Composite Score Calculation
+    console.log(`\n[Score Breakdown]`);
     const finalMatches = aiMatches
       .map((match) => {
         const otherAggregated = otherUsersAggregated.find((u) => u.email === match.email);
         if (!otherAggregated) return null;
-        const aiContribution = (match.aiScore || 0) * 0.25;
+        
+        const aiScore = match.aiScore || 0;
+        const aiContribution = aiScore * 0.25;
         const signalContribution = otherAggregated.finalSignalScore * 0.75;
         const finalChance = Math.round(signalContribution + aiContribution);
+        
+        console.log(`- Match: ${match.email}`);
+        console.log(`  > Base Signal Score: ${otherAggregated.finalSignalScore.toFixed(2)} (* 0.75 = ${signalContribution.toFixed(2)})`);
+        console.log(`  > AI Similarity Score: ${aiScore} (* 0.25 = ${aiContribution.toFixed(2)})`);
+        console.log(`  > Final Composite Score: ${finalChance}%`);
+        console.log(`  > Reason: ${match.reason}`);
+
         return { email: match.email, chance: finalChance, reason: match.reason };
       })
       .filter((m) => m && m.chance > 30);
+      
+    console.log(`=============================================\n`);
 
     // 4. Persistence
     const bulkOps = finalMatches.map((match) => {

@@ -24,6 +24,31 @@ const fetchUsers = async () => {
   return response.data || [];
 };
 
+// --- Helper Component for Avatar ---
+const MatchModalAvatar = ({ email, user, altText }) => {
+  const { data: photos = [] } = useQuery({
+    queryKey: ['userPhotos', email],
+    queryFn: async () => {
+      if (!email) return [];
+      const response = await api.get(`/api/user-photos/${email}`);
+      if (response.status === 204 || !response.data) return [];
+      return response.data.data || [];
+    },
+    enabled: !!email,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const photoUrl = photos.length > 0 ? photos[0].url : user?.photoURL;
+
+  return <UserAvatar src={photoUrl} alt={altText} highRes={true} />;
+};
+
+MatchModalAvatar.propTypes = {
+  email: PropTypes.string,
+  user: PropTypes.object,
+  altText: PropTypes.string,
+};
+
 const RoomMatch = ({ accordionComponent }) => {
   const userEmail = localStorage.getItem('userEmail');
   const { isDarkMode } = useTheme();
@@ -218,26 +243,24 @@ const RoomMatch = ({ accordionComponent }) => {
 
             <div className="activity-match-users">
               <div className="activity-match-user">
-                <UserAvatar
-                  src={users.find((u) => u.email === userEmail)?.photoURL}
-                  alt="You"
-                  highRes={true}
+                <MatchModalAvatar 
+                  email={userEmail} 
+                  user={users.find((u) => u.email === userEmail)} 
+                  altText="You" 
                 />
                 <span>You</span>
               </div>
 
               <div className="activity-match-icon">+</div>
               <div className="activity-match-user">
-                <UserAvatar
-                  src={
-                    users.find((u) => {
-                      const matchedUserEmail =
-                        matchedRoom.email !== userEmail ? matchedRoom.email : matchedRoom.usermatch;
-                      return u.email === matchedUserEmail;
-                    })?.photoURL
-                  }
-                  alt="Matched User"
-                  highRes={true}
+                <MatchModalAvatar 
+                  email={matchedRoom.email !== userEmail ? matchedRoom.email : matchedRoom.usermatch}
+                  user={users.find(
+                    (u) =>
+                      u.email ===
+                      (matchedRoom.email !== userEmail ? matchedRoom.email : matchedRoom.usermatch)
+                  )}
+                  altText="Matched User"
                 />
 
                 <span>

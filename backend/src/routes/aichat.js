@@ -256,6 +256,14 @@ Instruction: ใช้ข้อมูล Context นี้ในการสน�
     });
 
     const aiResponseContent = result.response.text();
+    
+    // Log AI Chat interactions for testing and demonstrations (e.g., Data Privacy Case)
+    console.log(`\n========== 💬 [AI Chat Interaction Log] ==========`);
+    console.log(`[Room ID]: ${roomId}`);
+    console.log(`[User Request]: "${content}"`);
+    console.log(`[AI Response]: "${aiResponseContent}"`);
+    console.log(`====================================================\n`);
+
     // 2. Save user's message
     const userMessage = new AiChatMessage({ roomId, sender: MessageSender.USER, content });
     await userMessage.save();
