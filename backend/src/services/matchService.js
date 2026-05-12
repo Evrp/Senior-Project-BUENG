@@ -6,13 +6,21 @@ import { Filter } from '../model/filter.js';
 import { Friend } from '../model/Friend.js';
 import { Gmail } from '../model/gmail.js';
 import { EventEmitter } from 'events';
+import { MATCH_CONFIG } from '../constants/index.js';
 
 // Create a singleton emitter for internal matching events
 export const internalMatchEmitter = new EventEmitter();
 
 // Throttling: track last run time per user to avoid redundant heavy calculations
 const lastMatchExecution = new Map();
-const THROTTLE_MS = 10000; // 10 seconds
+
+/**
+ * SEC-009/014: Redact raw emails and sanitize text for matching context.
+ */
+const sanitizeMatchText = (text) => {
+  if (!text) return '';
+  return text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL]').slice(0, 500);
+};
 
 /**
  * Perform semantic matching between a user and other users based on their "About Me" descriptions.
@@ -23,15 +31,17 @@ export const matchByProfile = async (app, userEmail, profileDescription) => {
     // 1. Throttle check
     const now = Date.now();
     const lastRun = lastMatchExecution.get(`profile:${userEmail}`) || 0;
-    if (now - lastRun < THROTTLE_MS) return;
+    if (now - lastRun < MATCH_CONFIG.THROTTLE_MS) return;
     lastMatchExecution.set(`profile:${userEmail}`, now);
 
     // Update active status for current user
     await Gmail.findOneAndUpdate({ email: userEmail }, { lastActiveAt: new Date() });
 
-    if (!profileDescription || profileDescription.trim().length < 5) {
+    if (
+      !profileDescription ||
+      profileDescription.trim().length < MATCH_CONFIG.THRESHOLDS.MIN_DESCRIPTION_LENGTH
+    )
       return;
-    }
 
     // 1. Pre-filtering & Scoring via Aggregation (Optimized)
     const emailDomain = userEmail.split('@')[1];
@@ -141,7 +151,7 @@ export const matchByProfile = async (app, userEmail, profileDescription) => {
                   0,
                 ],
               },
-              35,
+              MATCH_CONFIG.WEIGHTS.EVENT,
             ],
           },
           genreScore: {
@@ -163,11 +173,27 @@ export const matchByProfile = async (app, userEmail, profileDescription) => {
                   0,
                 ],
               },
-              25,
+              MATCH_CONFIG.WEIGHTS.GENRE,
             ],
           },
-          recencyScore: { $cond: [{ $lt: ['$daysSinceActive', 7] }, 10, 0] },
-          activityScore: { $multiply: [{ $min: [{ $divide: ['$activityCount', 10] }, 1] }, 5] },
+          recencyScore: {
+            $cond: [
+              { $lt: ['$daysSinceActive', MATCH_CONFIG.THRESHOLDS.RECENCY_DAYS] },
+              MATCH_CONFIG.WEIGHTS.RECENCY,
+              0,
+            ],
+          },
+          activityScore: {
+            $multiply: [
+              {
+                $min: [
+                  { $divide: ['$activityCount', MATCH_CONFIG.THRESHOLDS.ACTIVITY_DIVISOR] },
+                  1,
+                ],
+              },
+              MATCH_CONFIG.WEIGHTS.ACTIVITY,
+            ],
+          },
         },
       },
       {
@@ -182,7 +208,12 @@ export const matchByProfile = async (app, userEmail, profileDescription) => {
           signalBaseScore: {
             $cond: [
               { $gt: ['$mutualFriendsCount', 0] },
-              { $min: [100, { $add: ['$signalBaseScore', 10] }] },
+              {
+                $min: [
+                  MATCH_CONFIG.WEIGHTS.MAX_BASE_SCORE,
+                  { $add: ['$signalBaseScore', MATCH_CONFIG.WEIGHTS.MUTUAL_FRIEND_BONUS] },
+                ],
+              },
               '$signalBaseScore',
             ],
           },
@@ -192,9 +223,17 @@ export const matchByProfile = async (app, userEmail, profileDescription) => {
         $addFields: {
           skipPenalty: {
             $max: [
-              0.1,
+              MATCH_CONFIG.PENALTIES.MIN_PENALTY,
               {
-                $subtract: [1, { $multiply: [{ $ifNull: ['$existingMatch.skipCount', 0] }, 0.15] }],
+                $subtract: [
+                  1,
+                  {
+                    $multiply: [
+                      { $ifNull: ['$existingMatch.skipCount', 0] },
+                      MATCH_CONFIG.PENALTIES.SKIP_STEP,
+                    ],
+                  },
+                ],
               },
             ],
           },
@@ -202,7 +241,7 @@ export const matchByProfile = async (app, userEmail, profileDescription) => {
       },
       { $addFields: { finalSignalScore: { $multiply: ['$signalBaseScore', '$skipPenalty'] } } },
       { $sort: { finalSignalScore: -1 } },
-      { $limit: 20 },
+      { $limit: MATCH_CONFIG.LIMITS.CANDIDATES_COUNT },
       { $project: { email: 1, detail: '$userInfo.detail', finalSignalScore: 1 } },
     ]);
 
@@ -225,7 +264,7 @@ Output Format: JSON
     const model = getModel('MATCHING', { systemInstruction: systemPrompt });
 
     const promptText = `User ปัจจุบัน: "${profileDescription}"\nผู้ใช้อื่นๆ (กรองตามสัญญาณความสนใจแล้ว): ${JSON.stringify(userListForAI)}`;
-    
+
     console.log(`\n========== 🔍 [AI Match Data Log] ==========`);
     console.log(`[Input] User: ${userEmail}`);
     console.log(`[Input] Profile: "${profileDescription}"`);
@@ -238,14 +277,14 @@ Output Format: JSON
 
     const rawResponse = result.response.text();
     console.log(`[AI Raw Response]:\n`, rawResponse);
-    
+
     let aiResponse = {};
     try {
       aiResponse = JSON.parse(rawResponse);
     } catch (e) {
       console.error(`[AI JSON Parse Error]:`, e.message);
     }
-    
+
     const aiMatches = aiResponse.matches || [];
 
     // 3. Final Composite Score Calculation
@@ -254,22 +293,25 @@ Output Format: JSON
       .map((match) => {
         const otherAggregated = otherUsersAggregated.find((u) => u.email === match.email);
         if (!otherAggregated) return null;
-        
+
         const aiScore = match.aiScore || 0;
-        const aiContribution = aiScore * 0.25;
-        const signalContribution = otherAggregated.finalSignalScore * 0.75;
+        const aiContribution = (match.aiScore || 0) * MATCH_CONFIG.COMPOSITE_WEIGHTS.AI;
+        const signalContribution =
+          otherAggregated.finalSignalScore * MATCH_CONFIG.COMPOSITE_WEIGHTS.SIGNAL;
         const finalChance = Math.round(signalContribution + aiContribution);
-        
+
         console.log(`- Match: ${match.email}`);
-        console.log(`  > Base Signal Score: ${otherAggregated.finalSignalScore.toFixed(2)} (* 0.75 = ${signalContribution.toFixed(2)})`);
+        console.log(
+          `  > Base Signal Score: ${otherAggregated.finalSignalScore.toFixed(2)} (* 0.75 = ${signalContribution.toFixed(2)})`
+        );
         console.log(`  > AI Similarity Score: ${aiScore} (* 0.25 = ${aiContribution.toFixed(2)})`);
         console.log(`  > Final Composite Score: ${finalChance}%`);
         console.log(`  > Reason: ${match.reason}`);
 
         return { email: match.email, chance: finalChance, reason: match.reason };
       })
-      .filter((m) => m && m.chance > 30);
-      
+      .filter((m) => m && m.chance > MATCH_CONFIG.THRESHOLDS.PROFILE_MATCH);
+
     console.log(`=============================================\n`);
 
     // 4. Persistence
@@ -331,7 +373,7 @@ export const matchByLikedEvent = async (app, userEmail, eventId, eventTitle) => 
     // 1. Throttle check
     const now = Date.now();
     const lastRun = lastMatchExecution.get(`event:${userEmail}:${eventId}`) || 0;
-    if (now - lastRun < THROTTLE_MS) return;
+    if (now - lastRun < MATCH_CONFIG.THROTTLE_MS) return;
     lastMatchExecution.set(`event:${userEmail}:${eventId}`, now);
 
     console.info(`[Match Service] Matching for ${userEmail} on event ${eventTitle || eventId}...`);
@@ -396,12 +438,17 @@ export const matchByLikedEvent = async (app, userEmail, eventId, eventTitle) => 
       const union = new Set([...mySubGenres, ...otherSubGenres]);
 
       let jaccardChance = 30;
-      if (union.size > 0) {
-        jaccardChance = Math.round((intersection.size / union.size) * 100);
-      }
+      if (union.size > 0) jaccardChance = Math.round((intersection.size / union.size) * 100);
 
-      const likeBasedChance = Math.min(95, 30 + sharedLikeCount * 13);
-      const finalChance = Math.round(likeBasedChance * 0.7 + jaccardChance * 0.3);
+      const likeBasedChance = Math.min(
+        MATCH_CONFIG.EVENT_MATCH.MAX_LIKE_CHANCE,
+        MATCH_CONFIG.EVENT_MATCH.BASE_CHANCE +
+          sharedLikes.length * MATCH_CONFIG.EVENT_MATCH.WEIGHT_PER_LIKE
+      );
+      const finalChance = Math.round(
+        likeBasedChance * MATCH_CONFIG.EVENT_MATCH.SIGNAL_WEIGHT +
+          jaccardChance * MATCH_CONFIG.EVENT_MATCH.JACCARD_WEIGHT
+      );
 
       bulkOps.push({
         updateOne: {

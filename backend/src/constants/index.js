@@ -3,3 +3,4 @@
  */
 
 export * from './gemini.js';
+export * from './matchConfig.js';
