@@ -65,7 +65,6 @@ export const matchByProfile = async (app, userEmail, profileDescription) => {
           'userInfo.detail': { $exists: true, $ne: '' },
         },
       },
-      // Step 2-8: (Aggregation Pipeline logic as before...)
       { $lookup: { from: 'gmails', localField: 'email', foreignField: 'email', as: 'account' } },
       { $unwind: { path: '$account', preserveNullAndEmptyArrays: true } },
       {
@@ -247,28 +246,37 @@ export const matchByProfile = async (app, userEmail, profileDescription) => {
 
     if (otherUsersAggregated.length === 0) return;
 
-    // 2. AI Semantic Matching
-    const userListForAI = otherUsersAggregated.map((u) => ({ email: u.email, detail: u.detail }));
+    // 2. AI Semantic Matching (Anonymized Identifiers)
+    const userListForAI = otherUsersAggregated.map((u, index) => ({
+      id: `USER_${index}`,
+      actualEmail: u.email,
+      detail: sanitizeMatchText(u.detail),
+    }));
+
     const systemPrompt = `
-Role: Senior BUENG AI Matchmaker (Aggregated Context)
-Task: วิเคราะห์ความเข้ากันได้เชิงเป้าหมายจากโปรไฟล์นักศึกษา (Semantic Similarity)
+Role: Senior BUENG AI Matchmaker (Anonymized Context)
+Task: วิเคราะห์ความเข้ากันได้จากโปรไฟล์นักศึกษา (Semantic Similarity)
 Goal: ส่งคืนคะแนน 0-100 สำหรับความเหมือนของเนื้อหาโปรไฟล์
+
+### SECURITY:
+- NEVER reveal raw email identifiers.
+- Use the provided user IDs (USER_0, USER_1, etc.).
 
 Output Format: JSON
 { 
   "matches": [
-    { "email": "xxx@bumail.net", "aiScore": score, "reason": "ไทยสั้นๆ ที่เชื่อมโยงกับโปรไฟล์" }
+    { "id": "USER_X", "aiScore": score, "reason": "ไทยสั้นๆ ที่เชื่อมโยงกับโปรไฟล์" }
   ] 
 }`;
 
     const model = getModel('MATCHING', { systemInstruction: systemPrompt });
 
-    const promptText = `User ปัจจุบัน: "${profileDescription}"\nผู้ใช้อื่นๆ (กรองตามสัญญาณความสนใจแล้ว): ${JSON.stringify(userListForAI)}`;
+    const promptText = `User ปัจจุบัน: "${sanitizeMatchText(profileDescription)}"\nผู้ใช้อื่นๆ (กรองตามสัญญาณความสนใจแล้ว): ${JSON.stringify(userListForAI.map((u) => ({ id: u.id, detail: u.detail })))}`;
 
-    console.log(`\n========== 🔍 [AI Match Data Log] ==========`);
-    console.log(`[Input] User: ${userEmail}`);
-    console.log(`[Input] Profile: "${profileDescription}"`);
-    console.log(`[Input] Comparing with ${userListForAI.length} other users...`);
+    console.info('\n========== 🔍 [AI Match Data Log] ==========');
+    console.info(`[Input] User: ${userEmail}`);
+    console.info(`[Input] Profile: "${profileDescription}"`);
+    console.info(`[Input] Comparing with ${userListForAI.length} other users...`);
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: promptText }] }],
@@ -276,43 +284,46 @@ Output Format: JSON
     });
 
     const rawResponse = result.response.text();
-    console.log(`[AI Raw Response]:\n`, rawResponse);
+    console.info('[AI Raw Response]:\n', rawResponse);
 
     let aiResponse = {};
     try {
       aiResponse = JSON.parse(rawResponse);
     } catch (e) {
-      console.error(`[AI JSON Parse Error]:`, e.message);
+      console.error('[AI JSON Parse Error]:', e.message);
     }
 
     const aiMatches = aiResponse.matches || [];
 
     // 3. Final Composite Score Calculation
-    console.log(`\n[Score Breakdown]`);
+    console.info('\n[Score Breakdown]');
     const finalMatches = aiMatches
       .map((match) => {
-        const otherAggregated = otherUsersAggregated.find((u) => u.email === match.email);
+        const anonymousUser = userListForAI.find((u) => u.id === match.id);
+        if (!anonymousUser) return null;
+
+        const otherAggregated = otherUsersAggregated.find((u) => u.email === anonymousUser.actualEmail);
         if (!otherAggregated) return null;
 
         const aiScore = match.aiScore || 0;
-        const aiContribution = (match.aiScore || 0) * MATCH_CONFIG.COMPOSITE_WEIGHTS.AI;
+        const aiContribution = aiScore * MATCH_CONFIG.COMPOSITE_WEIGHTS.AI;
         const signalContribution =
           otherAggregated.finalSignalScore * MATCH_CONFIG.COMPOSITE_WEIGHTS.SIGNAL;
         const finalChance = Math.round(signalContribution + aiContribution);
 
-        console.log(`- Match: ${match.email}`);
-        console.log(
+        console.info(`- Match: ${anonymousUser.actualEmail}`);
+        console.info(
           `  > Base Signal Score: ${otherAggregated.finalSignalScore.toFixed(2)} (* 0.75 = ${signalContribution.toFixed(2)})`
         );
-        console.log(`  > AI Similarity Score: ${aiScore} (* 0.25 = ${aiContribution.toFixed(2)})`);
-        console.log(`  > Final Composite Score: ${finalChance}%`);
-        console.log(`  > Reason: ${match.reason}`);
+        console.info(`  > AI Similarity Score: ${aiScore} (* 0.25 = ${aiContribution.toFixed(2)})`);
+        console.info(`  > Final Composite Score: ${finalChance}%`);
+        console.info(`  > Reason: ${match.reason}`);
 
-        return { email: match.email, chance: finalChance, reason: match.reason };
+        return { email: anonymousUser.actualEmail, chance: finalChance, reason: match.reason };
       })
       .filter((m) => m && m.chance > MATCH_CONFIG.THRESHOLDS.PROFILE_MATCH);
 
-    console.log(`=============================================\n`);
+    console.info('=============================================\n');
 
     // 4. Persistence
     const bulkOps = finalMatches.map((match) => {
@@ -366,7 +377,6 @@ Output Format: JSON
 
 /**
  * Triggered when a user likes an event. Find others who liked the same event and create InfoMatches.
- * Refactored from eventmatch.js for better performance and decoupling.
  */
 export const matchByLikedEvent = async (app, userEmail, eventId, eventTitle) => {
   try {
@@ -378,15 +388,15 @@ export const matchByLikedEvent = async (app, userEmail, eventId, eventTitle) => 
 
     console.info(`[Match Service] Matching for ${userEmail} on event ${eventTitle || eventId}...`);
 
-    // 2. Find likes from other users that match the specific eventId passed here for immediate feedback
+    // 2. Find likes from other users
     const otherUserLikes = await Like.find({
       userEmail: { $ne: userEmail },
-      eventId: eventId,
+      eventId,
     }).lean();
 
     if (!otherUserLikes || otherUserLikes.length === 0) return;
 
-    // 3. Pre-fetch filters for overlapping interest calculation
+    // 3. Pre-fetch filters
     const otherEmails = [...new Set(otherUserLikes.map((l) => l.userEmail))];
     const [myFilter, otherFilters] = await Promise.all([
       Filter.findOne({ email: userEmail }).lean(),
@@ -430,7 +440,6 @@ export const matchByLikedEvent = async (app, userEmail, eventId, eventTitle) => 
       if (matchedPartners.has(targetEmail)) continue;
 
       const users = [userEmail, targetEmail].sort();
-      const sharedLikeCount = sharedLikes.length;
 
       // Interest similarity (Jaccard)
       const otherSubGenres = filterMap[targetEmail] || new Set();
@@ -455,17 +464,17 @@ export const matchByLikedEvent = async (app, userEmail, eventId, eventTitle) => 
           filter: {
             email: users[0],
             usermatch: users[1],
-            status: { $ne: 'matched' }, // Don't overwrite established matches
+            status: { $ne: 'matched' },
           },
           update: {
             $set: {
-              eventId: eventId,
+              eventId,
               detail: eventTitle || 'Shared Event Interest',
               chance: finalChance,
               status: 'pending',
               initiatorEmail: userEmail,
               lastMatchedAt: new Date(),
-              university: university,
+              university,
             },
           },
           upsert: true,
@@ -475,26 +484,26 @@ export const matchByLikedEvent = async (app, userEmail, eventId, eventTitle) => 
       matchData.push({ targetEmail, title: eventTitle });
     }
 
-    if (bulkOps.length > 0) {
-      const result = await InfoMatch.bulkWrite(bulkOps);
+    if (bulkOps.length === 0) return;
 
-      // 5. Notifications
-      const io = app.get('io');
-      const userSockets = app.get('userSockets') || {};
-      if (io && result.upsertedCount > 0) {
-        for (const target of matchData) {
-          const recipientSocket = userSockets[target.targetEmail];
-          if (recipientSocket) {
-            io.to(recipientSocket).emit('notify-match', {
-              type: 'event',
-              eventTitle: target.title,
-              from: userEmail,
-            });
-          }
-        }
-        io.emit('match_updated');
+    const result = await InfoMatch.bulkWrite(bulkOps);
+
+    // 5. Notifications
+    const io = app.get('io');
+    const userSockets = app.get('userSockets') || {};
+    if (!io || result.upsertedCount === 0) return;
+
+    for (const target of matchData) {
+      const recipientSocket = userSockets[target.targetEmail];
+      if (recipientSocket) {
+        io.to(recipientSocket).emit('notify-match', {
+          type: 'event',
+          eventTitle: target.title,
+          from: userEmail,
+        });
       }
     }
+    io.emit('match_updated');
   } catch (error) {
     console.error('[Match By Like Error]:', error);
   }
