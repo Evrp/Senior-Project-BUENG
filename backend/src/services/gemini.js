@@ -39,7 +39,10 @@ export const getModel = (taskType = null, config = {}) => {
   }
 
   // 3. Grounding: Enable Google Search for specific real-time tasks
-  if (taskType === 'CHAT' || taskType === 'RECOMMENDATION') {
+  // Incompatible with structured JSON output (responseMimeType: 'application/json')
+  const isJsonMode = config.generationConfig?.responseMimeType === 'application/json';
+
+  if (taskType === 'CHAT' && !isJsonMode) {
     config.tools = config.tools || [];
     // Only add if not already present
     if (!config.tools.find((t) => t.googleSearch)) {
