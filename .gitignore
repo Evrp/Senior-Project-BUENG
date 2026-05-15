@@ -29,11 +29,11 @@ Desktop.ini
 # Secret files
 backend/src/firebase/serviceAccountKey.json
 
-# env files (can opt-in for committing if needed)
+# env files
+**/.env
+!./backend/.env.example
+!./frontend/.env.example
 .env*
-.env.*
-!.env.example
-
 # Uploads
 uploads/
 
