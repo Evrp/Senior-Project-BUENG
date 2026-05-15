@@ -30,10 +30,10 @@ Desktop.ini
 backend/src/firebase/serviceAccountKey.json
 
 # env files
-**/.env
-!./backend/.env.example
-!./frontend/.env.example
 .env*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 # Uploads
 uploads/
 
