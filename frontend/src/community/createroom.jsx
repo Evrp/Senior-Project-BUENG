@@ -13,6 +13,7 @@ const CreateRoom = ({ onRoomCreated }) => {
     description: "",
     memberLimit: 50, // ค่าเริ่มต้น
     type: "public", // ค่าเริ่มต้น
+    password: "", // เพิ่มฟิลด์รหัสผ่าน
     tags: "", // เก็บเป็น string คั่นด้วย comma
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,7 +35,7 @@ const CreateRoom = ({ onRoomCreated }) => {
       // แปลง tags string เป็น array
       const tagsArray = roomData.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
 
-      const res = await api.post(`/api/createroom`, {
+      const res = await api.post(\`/api/createroom\`, {
         ...roomData,
         tags: tagsArray,
         memberLimit: Number(roomData.memberLimit), // แปลงเป็นตัวเลข
@@ -51,6 +52,7 @@ const CreateRoom = ({ onRoomCreated }) => {
         description: "",
         memberLimit: 50,
         type: "public",
+        password: "",
         tags: "",
       });
       setShowForm(false);
@@ -149,6 +151,23 @@ const CreateRoom = ({ onRoomCreated }) => {
                 <option value="public">สาธารณะ (Public)</option>
                 <option value="private">ส่วนตัว (Private)</option>
               </select>
+
+              {/* --- รหัสผ่าน (ถ้าเป็นห้องส่วนตัว) --- */}
+              {roomData.type === "private" && (
+                <>
+                  <label htmlFor="password">รหัสผ่านสำหรับเข้าห้อง:</label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    className="commu-input"
+                    placeholder="ระบุรหัสผ่าน"
+                    value={roomData.password}
+                    onChange={handleChange}
+                    required={roomData.type === "private"}
+                  />
+                </>
+              )}
 
               {/* --- แท็ก --- */}
               <label htmlFor="tags">แท็ก (คั่นด้วยเครื่องหมาย ,):</label>

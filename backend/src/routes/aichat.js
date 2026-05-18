@@ -256,7 +256,7 @@ Instruction: ใช้ข้อมูล Context นี้ในการสน�
     });
 
     const aiResponseContent = result.response.text();
-    
+
     // Log AI Chat interactions for testing and demonstrations (e.g., Data Privacy Case)
     console.log(`\n========== 💬 [AI Chat Interaction Log] ==========`);
     console.log(`[Room ID]: ${roomId}`);

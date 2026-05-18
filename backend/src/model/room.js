@@ -19,6 +19,14 @@ const roomSchema = new mongoose.Schema({
     min: 1,
   },
   tags: [String],
+  type: {
+    type: String,
+    enum: ['public', 'private'],
+    default: 'public',
+  },
+  password: {
+    type: String,
+  },
   createdBy: String, // ชื่อหรืออีเมลของผู้สร้าง
 }, { timestamps: true });
 

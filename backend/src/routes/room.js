@@ -8,7 +8,7 @@ const router = express.Router();
 
 // Join community
 router.post('/join-community', requireOwner, async (req, res) => {
-  const { userEmail, roomId, roomName } = req.body;
+  const { userEmail, roomId, roomName, password } = req.body;
 
   // Validate input
   if (!userEmail || !roomId || !roomName) {
@@ -16,6 +16,21 @@ router.post('/join-community', requireOwner, async (req, res) => {
   }
 
   try {
+    const room = await Room.findById(roomId);
+    if (!room) {
+      return res.status(404).json({ error: 'ไม่พบห้องที่ต้องการเข้าร่วม' });
+    }
+
+    // ตรวจสอบรหัสผ่านถ้าเป็นห้อง private
+    if (room.type === 'private') {
+      if (!password) {
+        return res.status(400).json({ error: 'ห้องนี้เป็นห้องส่วนตัว กรุณาระบุรหัสผ่าน', isPrivate: true });
+      }
+      if (room.password !== password) {
+        return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง', isPrivate: true });
+      }
+    }
+
     const existingRoom = await Info.findOne({
       email: userEmail,
       'joinedRooms.roomId': roomId,
@@ -47,13 +62,19 @@ router.post('/join-community', requireOwner, async (req, res) => {
 // Create room
 router.post('/createroom', requireOwner, async (req, res) => {
   try {
-    const { name, image, description, memberLimit, type, tags } = req.body;
+    const { name, image, description, memberLimit, type, tags, password } = req.body;
     const createdBy = req.user.email; // Get user from authenticated middleware
 
     // --- Enhanced Validation ---
     if (!name || !image || !memberLimit || !type) {
       return res.status(400).json({
         error: 'กรุณาระบุข้อมูลให้ครบถ้วน: ชื่อ, รูปภาพ, จำนวนสมาชิกสูงสุด, และประเภทของห้อง',
+      });
+    }
+
+    if (type === 'private' && !password) {
+      return res.status(400).json({
+        error: 'กรุณาระบุรหัสผ่านสำหรับห้องส่วนตัว',
       });
     }
 
@@ -72,6 +93,8 @@ router.post('/createroom', requireOwner, async (req, res) => {
       image,
       description,
       memberLimit,
+      type,
+      password: type === 'private' ? password : null,
       tags: tags || [],
       createdBy,
     });

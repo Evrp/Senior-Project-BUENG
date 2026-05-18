@@ -6,7 +6,7 @@ import './css/roomlist.css';
 import { toast } from 'react-toastify';
 import { useTheme } from '../context/themecontext';
 import PropTypes from 'prop-types';
-import { FaUsers } from 'react-icons/fa';
+import { FaUsers, FaLock } from 'react-icons/fa';
 import UserAvatar from '../components/UserAvatar';
 
 const RoomList = ({
@@ -30,7 +30,7 @@ const RoomList = ({
   const { data: joinedRoomIds = [], isLoading: isLoadingJoined } = useQuery({
     queryKey: ['userJoinedRooms', userEmail],
     queryFn: async () => {
-      const filterjoinedRooms = await api.get(`/api/user-rooms/${userEmail}`);
+      const filterjoinedRooms = await api.get(\`/api/user-rooms/\${userEmail}\`);
       return Array.isArray(filterjoinedRooms.data.roomIds)
         ? filterjoinedRooms.data.roomIds.filter((id) => !!id)
         : [];
@@ -48,20 +48,21 @@ const RoomList = ({
 
   const isJoined = (roomId) => joinedRoomIds.includes(roomId);
 
-  const handleAddCommunity = async (roomId, roomName) => {
+  const handleAddCommunity = async (roomId, roomName, password = null) => {
     try {
-      const res = await api.post(`/api/join-community`, {
+      const res = await api.post(\`/api/join-community\`, {
         userEmail,
         roomId,
         roomName,
+        password,
       });
       if (res.status === 200 || res.status === 201) {
         toast.success('เข้าร่วมห้องสําเร็จ!');
-        navigate(`/chat/${roomId}`);
+        navigate(\`/chat/\${roomId}\`);
       }
     } catch (error) {
       if (error.response && error.response.status === 409) {
-        navigate(`/chat/${roomId}`);
+        navigate(\`/chat/\${roomId}\`);
         return;
       }
       console.error('Error adding community:', error);
@@ -73,16 +74,26 @@ const RoomList = ({
     if (isDeleteMode) {
       handleRoomSelect(room._id);
     } else if (showOnlyMyRooms || isJoined(room._id)) {
-      navigate(`/chat/${room._id}`);
+      navigate(\`/chat/\${room._id}\`);
     } else {
-      handleAddCommunity(room._id, room.name);
+      if (room.type === 'private') {
+        const password = window.prompt('ห้องนี้เป็นห้องส่วนตัว กรุณาระบุรหัสผ่าน:');
+        if (password === null) return; // User cancelled
+        if (password === '') {
+          toast.error('กรุณาระบุรหัสผ่าน');
+          return;
+        }
+        handleAddCommunity(room._id, room.name, password);
+      } else {
+        handleAddCommunity(room._id, room.name);
+      }
     }
   };
 
   const isLoading = isLoadingRooms || isLoadingJoined;
 
   return (
-    <section className={`roomlist-section ${isDarkMode ? 'dark-mode' : ''}`}>
+    <section className={\`roomlist-section \${isDarkMode ? 'dark-mode' : ''}\`}>
       <header className="roomlist-header"></header>
       <div className="room-list">
         {isLoading ? (
@@ -103,9 +114,9 @@ const RoomList = ({
           filteredRooms.map((room) => (
             <div
               key={room._id}
-              className={`room-container card-room ${
+              className={\`room-container card-room \${
                 selectedRooms.includes(room._id) ? 'selected' : ''
-              }`}
+              }\`}
               onClick={() => handleRoomClick(room)}
             >
               <div className="room-image-wrap">
@@ -121,6 +132,12 @@ const RoomList = ({
                     />
                   </div>
                 )}
+                
+                {room.type === 'private' && (
+                  <div className="room-private-badge" title="ห้องส่วนตัว">
+                    <FaLock />
+                  </div>
+                )}
               </div>
               <>
                 <h4 className="room-name">{room.name}</h4>
@@ -132,7 +149,7 @@ const RoomList = ({
                   </div>
                   {!showOnlyMyRooms && (
                     <button
-                      className={`join-button ${isJoined(room._id) ? 'joined' : ''}`}
+                      className={\`join-button \${isJoined(room._id) ? 'joined' : ''}\`}
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent card click
                         handleRoomClick(room);

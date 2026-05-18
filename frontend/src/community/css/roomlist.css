@@ -208,6 +208,27 @@
   background: #ecebfa;
 }
 
+.room-private-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px 0 rgba(108, 99, 255, 0.15);
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c63ff;
+  font-size: 0.9rem;
+}
+
+.dark-mode .room-private-badge {
+  background: rgba(35, 36, 43, 0.9);
+  color: #b3b0f7;
+}
+
 .room-checkbox {
   position: absolute;
   top: 10px;
