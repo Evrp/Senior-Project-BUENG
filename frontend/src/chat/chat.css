@@ -31,7 +31,7 @@
 }
 
 /* Match Badge Styles */
-.match-badge {
+.sidebar-match-badge {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -41,6 +41,7 @@
   border-radius: 12px;
   animation: matchPulse 2s infinite;
   box-shadow: 0 2px 8px rgba(186, 144, 158, 0.3);
+  position: static !important;
 }
 
 .match-icon {

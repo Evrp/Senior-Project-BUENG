@@ -162,7 +162,7 @@ const MatchList = ({
 
                       {((matchData.emailjoined && matchData.usermatchjoined) ||
                         matchData.status === 'matched') && (
-                        <div className="match-badge">
+                        <div className="sidebar-match-badge">
                           {/* <FaHeart className="match-icon" /> */}
                           <span className="match-text">It&apos;s a Match!</span>
                         </div>
