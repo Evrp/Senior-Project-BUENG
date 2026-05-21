@@ -16,6 +16,7 @@ const RoomList = ({
   isDeleteMode,
   selectedRooms,
   setSelectedRooms,
+  onEditRoom,
 }) => {
   const userEmail = localStorage.getItem('userEmail');
   const { isDarkMode } = useTheme();
@@ -116,57 +117,73 @@ const RoomList = ({
             <div className="roomlist-empty-text">ยังไม่มีห้องในขณะนี้</div>
           </div>
         ) : (
-          filteredRooms.map((room) => (
-            <div
-              key={room._id}
-              className={`room-container card-room ${
-                selectedRooms.includes(room._id) ? 'selected' : ''
-              }`}
-              onClick={() => handleRoomClick(room)}
-            >
-              <div className="room-image-wrap">
-                <UserAvatar src={room.image} alt="room" className="room-image" />
+          filteredRooms.map((room) => {
+            const isCreator = room.createdBy && userEmail && room.createdBy.toLowerCase() === userEmail.toLowerCase();
+            return (
+              <div
+                key={room._id}
+                className={`room-container card-room ${
+                  selectedRooms.includes(room._id) ? 'selected' : ''
+                }`}
+                onClick={() => handleRoomClick(room)}
+              >
+                <div className="room-image-wrap">
+                  <UserAvatar src={room.image} alt="room" className="room-image" />
 
-                {isDeleteMode && room.createdBy && userEmail && room.createdBy.toLowerCase() === userEmail.toLowerCase() && (
-                  <div className="room-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={selectedRooms.includes(room._id)}
-                      onChange={() => handleRoomSelect(room._id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                )}
+                  {isDeleteMode && isCreator && (
+                    <div className="room-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedRooms.includes(room._id)}
+                        onChange={() => handleRoomSelect(room._id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
 
-                {room.type === 'private' && (
-                  <div className="room-private-badge" title="ห้องส่วนตัว">
-                    <FaLock />
-                  </div>
-                )}
-              </div>
-              <>
-                <h4 className="room-name">{room.name}</h4>
-                <p className="room-desc">{room.description}</p>
-                <div className="room-actions">
-                  <div className="room-member-count">
-                    <FaUsers />
-                    <span>{room.memberCount || 0}</span>
-                  </div>
-                  {!showOnlyMyRooms && (
-                    <button
-                      className={`join-button ${isJoined(room._id) ? 'joined' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent card click
-                        handleRoomClick(room);
-                      }}
-                    >
-                      {isJoined(room._id) ? 'Joined' : 'Join'}
-                    </button>
+                  {room.type === 'private' && (
+                    <div className="room-private-badge" title="ห้องส่วนตัว">
+                      <FaLock />
+                    </div>
                   )}
                 </div>
-              </>
-            </div>
-          ))
+                <div className="room-details">
+                  <h4 className="room-name">{room.name}</h4>
+                  <p className="room-desc">{room.description}</p>
+                  <div className="room-actions">
+                    <div className="room-member-count">
+                      <FaUsers />
+                      <span>{room.memberCount || 0}</span>
+                    </div>
+                    <div className="room-action-buttons" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {isCreator && (
+                        <button
+                          className="edit-button"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click
+                            onEditRoom(room);
+                          }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {!showOnlyMyRooms && (
+                        <button
+                          className={`join-button ${isJoined(room._id) ? 'joined' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click
+                            handleRoomClick(room);
+                          }}
+                        >
+                          {isJoined(room._id) ? 'Joined' : 'Join'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </section>
@@ -182,4 +199,5 @@ RoomList.propTypes = {
   isDeleteMode: PropTypes.bool.isRequired,
   selectedRooms: PropTypes.array.isRequired,
   setSelectedRooms: PropTypes.func.isRequired,
+  onEditRoom: PropTypes.func.isRequired,
 };

@@ -16,9 +16,7 @@ import {
   updateDoc,
   query,
   orderBy,
-  getDocs,
   doc,
-  where,
 } from 'firebase/firestore';
 
 import { useNotifications } from '../context/notificationContext';
@@ -426,6 +424,7 @@ const Chat = () => {
   const endOfMessagesRef = useRef(null);
   const isInitialLoad = useRef(true);
   const dropdownRefs = useRef({});
+  const processedMessageIds = useRef(new Set());
   const [RoomsBar, setRoomBar] = useState({});
   const [openMenuFor, setOpenMenuFor] = useState(null);
   const [isGroupChat, setIsGroupChat] = useState(false);
@@ -682,6 +681,7 @@ const Chat = () => {
     if (!roomId) return;
     setMessages([]); // Clear messages to prevent ghost content during switch
     isInitialLoad.current = true; // Reset initial load state
+    processedMessageIds.current.clear(); // Clear lock cache on room change
 
     // Determine if this is a group chat by checking allRooms directly
     // This avoids timing issues with isGroupChat state
@@ -704,30 +704,28 @@ const Chat = () => {
           });
 
       setMessages(filteredMessages);
+
+      // Mark unread messages as seen with memory lock
+      filteredMessages.forEach(async (msg) => {
+        if (
+          !msg.isSeen &&
+          msg.sender !== userEmail &&
+          (!msg.receiver || msg.receiver === userEmail) &&
+          !processedMessageIds.current.has(msg.id)
+        ) {
+          processedMessageIds.current.add(msg.id);
+          try {
+            await updateDoc(doc(db, 'messages', msg.id), { isSeen: true });
+          } catch (err) {
+            console.error('Error marking message as seen:', err);
+            processedMessageIds.current.delete(msg.id); // Try again on error
+          }
+        }
+      });
     });
 
     return () => unsubscribe();
   }, [roomId, userEmail, isGroupChat, activeUser, messagesRef, allRooms]);
-
-  useEffect(() => {
-    const markMessagesAsSeen = async () => {
-      const q = query(
-        collection(db, 'messages'),
-        where('roomId', '==', roomId),
-        where('isSeen', '==', false)
-      );
-      const querySnapshot = await getDocs(q);
-      querySnapshot.forEach(async (docSnap) => {
-        const msg = docSnap.data();
-        if (msg.sender !== userEmail && (!msg.receiver || msg.receiver === userEmail)) {
-          await updateDoc(doc(db, 'messages', docSnap.id), { isSeen: true });
-        }
-      });
-    };
-    if (messages.length > 0) {
-      markMessagesAsSeen();
-    }
-  }, [messages, userEmail, roomId]);
 
   useEffect(() => {
     if (messages.length > 0) {

@@ -10,7 +10,8 @@ const NotificationBell = () => {
     markNotificationAsRead,
     clearReadNotifications,
     handleFriendRequestResponse,
-    handleDeleteFriendRequest 
+    handleDeleteFriendRequest,
+    handleRoomInviteResponse
   } = useNotifications();
 
   const notificationDropdownRef = useRef(null);
@@ -104,10 +105,54 @@ const NotificationBell = () => {
                   </li>
                 )}
 
-                {/* 2. Friend Request Notifications (Individual) */}
+                {/* 2. Friend Request and Room Invite Notifications (Individual) */}
                 {notifications.map((notif) => {
-                  // Only show individual items if they are friend requests
-                  if (notif.type !== "friend-request") return null;
+                  if (notif.type !== "friend-request" && notif.type !== "room-invite") return null;
+
+                  if (notif.type === "room-invite") {
+                    return (
+                      <li
+                        key={notif.id}
+                        data-notification-id={notif.id}
+                        className={`notification-item unread`}
+                      >
+                        <div className="notification-content">
+                          <div className="notification-icon-wrapper">
+                            <div className="room-invite-icon" style={{ fontSize: "1.3rem", display: "flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "rgba(99, 102, 241, 0.1)" }}>✉️</div>
+                          </div>
+                          <div className="notification-details">
+                            <p className="notification-message" style={{ margin: 0, fontSize: "0.9rem" }}>
+                              <strong>{notif.senderNickname || notif.senderEmail}</strong> เชิญคุณเข้าห้อง <strong>{notif.roomName}</strong>
+                            </p>
+                            <span className="notification-time" style={{ fontSize: "0.75rem", opacity: 0.6 }}>
+                              {new Date(notif.timestamp).toLocaleString("th-TH")}
+                            </span>
+                            
+                            <div className="notification-actions" style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                              <button
+                                className="notification-button accept"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await handleRoomInviteResponse(notif.id, "accept");
+                                }}
+                              >
+                                ยอมรับ
+                              </button>
+                              <button
+                                className="notification-button reject"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await handleRoomInviteResponse(notif.id, "reject");
+                                }}
+                              >
+                                ปฏิเสธ
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  }
 
                   return (
                     <li

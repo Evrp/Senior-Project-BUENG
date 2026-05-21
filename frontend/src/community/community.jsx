@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import "./css/community.css";
 import CreateRoom from "./createroom";
 import RoomList from "./roomlist";
+import RoomFormModal from "./RoomFormModal";
 import RequireLogin from "../components/RequireLogin";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -25,6 +26,8 @@ const Newcommu = () => {
   const [showOnlyMyRooms, setShowOnlyMyRooms] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [roomToEdit, setRoomToEdit] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   // const [handlematchfriend, setHandleMatchFriend] = useState(false);
   const dropdownRefs = useRef({});
 
@@ -86,6 +89,14 @@ const Newcommu = () => {
     // Let React Query handle state updates via invalidation from the creation mutation (if any)
     // Or for optimistic updates:
     queryClient.setQueryData(["rooms"], (oldData) => Array.isArray(oldData) ? [...oldData, newRoom] : [newRoom]);
+    
+    // Invalidate userJoinedRooms query so the joinedRooms status is synchronized instantly
+    queryClient.invalidateQueries({ queryKey: ["userJoinedRooms", userEmail] });
+  };
+
+  const handleEditRoomClick = (room) => {
+    setRoomToEdit(room);
+    setIsEditModalOpen(true);
   };
 
   const handleDeleteSelectedRooms = () => {
@@ -169,8 +180,22 @@ const Newcommu = () => {
             isDeleteMode={isDeleteMode}
             selectedRooms={selectedRooms}
             setSelectedRooms={setSelectedRooms}
+            onEditRoom={handleEditRoomClick}
           />
         </div>
+
+        <RoomFormModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setRoomToEdit(null);
+          }}
+          roomToEdit={roomToEdit}
+          onSubmitSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["rooms"] });
+            toast.success("แก้ไขข้อมูลห้องสำเร็จ!");
+          }}
+        />
       </div>
     </RequireLogin>
   );

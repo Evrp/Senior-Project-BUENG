@@ -37,6 +37,26 @@ export const NotificationProvider = ({ children }) => {
       // 2. ดึงข้อมูลการจับคู่ (Matches) ล่าสุด
       const matchResponse = await api.get(`/api/infomatch/${userEmail}`);
 
+      // 3. ดึงข้อมูลการเชิญเข้าห้อง (Room Invitations)
+      let inviteNotifications = [];
+      try {
+        const inviteResponse = await api.get(`/api/room-invitations/${userEmail}`);
+        if (inviteResponse.data) {
+          inviteNotifications = inviteResponse.data.map((inv) => ({
+            id: inv._id,
+            type: 'room-invite',
+            roomId: inv.roomId,
+            roomName: inv.roomName,
+            senderEmail: inv.senderEmail,
+            senderNickname: inv.senderNickname,
+            timestamp: inv.createdAt,
+            read: false,
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching room invitations:', err);
+      }
+
       let allNotifications = [];
 
       // จัดการข้อมูลคำขอเพื่อน
@@ -65,6 +85,9 @@ export const NotificationProvider = ({ children }) => {
         }));
         allNotifications = [...allNotifications, ...matchNotifications];
       }
+
+      // รวมการเชิญเข้าห้อง
+      allNotifications = [...allNotifications, ...inviteNotifications];
 
       // เรียงลำดับตามเวลาล่าสุด
       allNotifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -216,6 +239,33 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [notifications, userEmail, newFriendRequest]);
 
+  // ฟังก์ชันสำหรับจัดการคำเชิญเข้าห้อง
+  const handleRoomInviteResponse = async (invitationId, response) => {
+    try {
+      const res = await api.post('/api/room-invitation/respond', {
+        invitationId,
+        response,
+      });
+      if (res.data && res.data.success) {
+        if (response === 'accept') {
+          toast.success('ยอมรับคำเชิญและเข้าร่วมห้องสำเร็จ!');
+          // Redirect to the chat room
+          window.location.href = `/chat/${res.data.roomId}`;
+        } else {
+          toast.info('ปฏิเสธคำเชิญเข้าห้องแล้ว');
+        }
+
+        // อัพเดต UI
+        setNotifications((prev) => prev.filter((n) => n.id !== invitationId));
+        return true;
+      }
+    } catch (err) {
+      console.error('Error responding to room invitation:', err);
+      toast.error(err.response?.data?.error || 'เกิดข้อผิดพลาดในการจัดการคำเชิญ');
+      return false;
+    }
+  };
+
   // เพิ่ม useEffect นี้ใน NotificationProvider หลังจาก useEffect อื่น ๆ
 
   useEffect(() => {
@@ -252,9 +302,76 @@ export const NotificationProvider = ({ children }) => {
         }
       }, 30000);
 
-      // จัดการเมื่อปิดแอป
+      // ฟัง event เชิญเข้าห้อง
+      const handleRoomInviteEvent = (data) => {
+        toast.info(
+          <div className="invite-toast" style={{ padding: '4px' }}>
+            <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>✉️</span>
+            <strong>{data.senderNickname || data.senderEmail}</strong> เชิญคุณเข้าร่วมห้อง <strong>{data.roomName}</strong>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+              <button
+                onClick={async () => {
+                  toast.dismiss();
+                  await handleRoomInviteResponse(data.id, 'accept');
+                }}
+                style={{
+                  padding: '5px 12px',
+                  fontSize: '0.8rem',
+                  background: '#22c55e',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                ยอมรับ
+              </button>
+              <button
+                onClick={async () => {
+                  toast.dismiss();
+                  await handleRoomInviteResponse(data.id, 'reject');
+                }}
+                style={{
+                  padding: '5px 12px',
+                  fontSize: '0.8rem',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                ปฏิเสธ
+              </button>
+            </div>
+          </div>,
+          {
+            position: 'top-right',
+            autoClose: false,
+            closeOnClick: false,
+            draggable: false,
+          }
+        );
+        fetchNotifications();
+      };
+
+      // ฟัง event โดนเตะออกจากห้อง
+      const handleKickedFromRoomEvent = (data) => {
+        if (data.email.toLowerCase() === userEmail.toLowerCase()) {
+          toast.warn(`คุณถูกเชิญออกจากห้อง ${data.roomName}`);
+          if (window.location.pathname === `/chat/${data.roomId}`) {
+            window.location.href = '/community';
+          }
+          fetchNotifications();
+        }
+      };
+
       const handleBeforeUnload = () => {
-        socket.emit('user-offline', { email: userEmail });
+        if (socket.connected) {
+          socket.emit('user-offline', { email: userEmail });
+        }
       };
 
       window.addEventListener('beforeunload', handleBeforeUnload);
@@ -262,6 +379,8 @@ export const NotificationProvider = ({ children }) => {
       socket.on('notify-friend-request', handleFriendRequestEvent);
       socket.on('notify-friend-accept', handleFriendAcceptEvent);
       socket.on('notify-match', handleNotifyMatch);
+      socket.on('notify-room-invite', handleRoomInviteEvent);
+      socket.on('kicked-from-room', handleKickedFromRoomEvent);
 
       // Cleanup function
       return () => {
@@ -272,6 +391,8 @@ export const NotificationProvider = ({ children }) => {
         socket.off('notify-friend-request', handleFriendRequestEvent);
         socket.off('notify-friend-accept', handleFriendAcceptEvent);
         socket.off('notify-match', handleNotifyMatch);
+        socket.off('notify-room-invite', handleRoomInviteEvent);
+        socket.off('kicked-from-room', handleKickedFromRoomEvent);
       };
     } // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -282,6 +403,7 @@ export const NotificationProvider = ({ children }) => {
     handleNotifyFriendRequest,
     handleNotifyFriendAccept,
     handleNotifyMatch,
+    handleRoomInviteResponse,
   ]);
 
   // ฟังก์ชันสำหรับการทำเครื่องหมายว่าแจ้งเตือนได้อ่านแล้ว
@@ -609,6 +731,7 @@ export const NotificationProvider = ({ children }) => {
         noti: notifications,
         handleNotifyFriendAccept,
         handleDeleteFriendRequest,
+        handleRoomInviteResponse,
         refreshNotifications,
         handleNotifyFriendRequest,
         isLoading,
