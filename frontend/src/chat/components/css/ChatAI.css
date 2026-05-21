@@ -226,12 +226,13 @@
   display: flex;
   align-items: center;
   background-color: #f8fafc;
-  border-radius: 24px;
-  padding: 8px 16px;
+  border-radius: 28px;
+  padding: 4px 4px 4px 16px; /* Optimized padding for a nested button look */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
   position: relative;
   z-index: 2;
+  border: 1px solid #e2e8f0;
 }
 
 .chat-container-ai .chat-border:focus-within {
@@ -297,16 +298,19 @@
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: white;
   border: none;
-  border-radius: 18px;
-  padding: 10px 20px;
+  border-radius: 20px;
+  padding: 8px 18px; /* Slightly adjusted padding to nest perfectly */
   display: flex;
   align-items: center;
   flex-direction: row;
+  gap: 6px; /* Gap between send icon and text */
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 5px rgba(99, 102, 241, 0.3);
+  flex-shrink: 0; /* Prevent the button from squishing on mobile */
+  white-space: nowrap; /* Ensure text and icon stay in a single line */
 }
 .dark-mode .chat-send-button {
   background: linear-gradient(135deg, #4b5563 0%, #374151 100%);

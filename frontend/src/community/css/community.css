@@ -61,6 +61,21 @@ button:hover {
   height: max-content;
 }
 
+@media (max-width: 768px) {
+  .container-content {
+    flex-direction: column;
+  }
+  .recommentfreind,
+  .dark-mode .recommentfreind {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+}
+
 /* กล่อง friend match เรียบหรู ขนาดเท่าเดิม */
 .recommentfreind {
   width: 30%;
@@ -235,6 +250,8 @@ button:hover {
   display: flex;
   justify-content: start;
   flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .delete-button-all-room {

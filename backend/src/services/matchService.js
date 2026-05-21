@@ -283,12 +283,18 @@ Output Format: JSON
       generationConfig: { temperature: 0.7, responseMimeType: 'application/json' },
     });
 
-    const rawResponse = result.response.text();
+    let rawResponse = result.response.text();
     console.info('[AI Raw Response]:\n', rawResponse);
 
     let aiResponse = {};
     try {
-      aiResponse = JSON.parse(rawResponse);
+      if (rawResponse) {
+        rawResponse = rawResponse.trim();
+        if (rawResponse.startsWith('```')) {
+          rawResponse = rawResponse.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
+        }
+      }
+      aiResponse = JSON.parse(rawResponse || '{}');
     } catch (e) {
       console.error('[AI JSON Parse Error]:', e.message);
     }

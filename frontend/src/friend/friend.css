@@ -531,8 +531,8 @@ s .search-friend-con::after {
 
 .search-friend-con {
   position: relative;
-  width: 600px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 600px;
   display: flex;
   align-items: center;
   border-radius: 28px;
@@ -568,22 +568,18 @@ s .search-friend-con::after {
 /* รายการเพื่อนออนไลน์ */
 .friend-list {
   list-style-type: none;
-  width: 600px;
+  width: 100%;
+  max-width: 600px;
   position: relative;
   overflow: visible;
   padding-bottom: 200px;
-  /* background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); */
 }
 
 .friend-recommend {
   height: fit-content;
   list-style-type: none;
-  width: 600px;
-  /* background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); */
+  width: 100%;
+  max-width: 600px;
   padding: 20px 0 200px 0;
 }
 
@@ -1198,7 +1194,8 @@ s .search-friend-con::after {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 400px;
+    width: 100%;
+    max-width: 400px;
   }
   .status.online {
     display: none;
@@ -1208,6 +1205,7 @@ s .search-friend-con::after {
   }
   .search-friend-con {
     max-width: 400px;
+    width: 100%;
   }
   .friend-list {
     display: flex;
@@ -1321,10 +1319,12 @@ s .search-friend-con::after {
 
 @media screen and (max-width: 500px) {
   .button-friend-item {
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
   }
   .dark-mode .button-friend-item {
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
   }
   .friend-name-friend {
     font-size: 10px;
@@ -1338,7 +1338,8 @@ s .search-friend-con::after {
     margin-left: 8px;
   }
   .search-friend-con {
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
   }
   .status.offline {
     font-size: 8px;

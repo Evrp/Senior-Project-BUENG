@@ -1664,9 +1664,9 @@
   .user-container {
     height: calc(100vh - 70px);
     /* ลดความสูงเพื่อไม่ให้ทับ bottom navbar */
-    width: 100vw;
-    min-width: 100vw;
-    max-width: 100vw;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     border-radius: 0;
     border-right: none;
     box-shadow: none;
@@ -1676,11 +1676,13 @@
 
   .friend-details {
     margin-left: 20px;
-    max-width: fit-content;
+    max-width: 100%;
+    flex: 1;
   }
 
   .match-detail {
-    max-width: fit-content;
+    max-width: 100%;
+    flex: 1;
     display: flex;
     flex-direction: column;
     margin-left: 20px;
@@ -1688,14 +1690,16 @@
   }
 
   .friend-name span {
-    width: 400px;
+    width: 100%;
+    max-width: 100%;
     display: inline-block;
     white-space: normal;
     word-break: break-word;
   }
 
   .friend-name-commu {
-    width: 400px;
+    width: 100%;
+    max-width: 100%;
     margin-left: 20px;
     display: inline-block;
     white-space: normal;

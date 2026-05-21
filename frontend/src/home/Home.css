@@ -233,9 +233,9 @@
   object-fit: cover;
   background: #fff;
 }
-@media screen and (min-width: 760px) {
+@media screen and (min-width: 769px) and (max-width: 990px) {
   .show-commu {
-    width: 70%; /* ปรับขนาดเป็น 70% */
+    width: 80%;
   }
   .bg-event-con {
     flex-direction: column;
@@ -244,15 +244,18 @@
     padding: 0;
   }
 }
-@media screen and (max-width: 760px) {
+@media screen and (max-width: 768px) {
   .show-commu {
-    width: 70%; /* ปรับขนาดเป็น 70% */
+    width: 100% !important;
   }
   .bg-event-con {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 0;
+    padding: 0 10px;
+  }
+  .header-home {
+    height: 70px !important;
   }
 }
 

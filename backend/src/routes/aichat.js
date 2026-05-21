@@ -70,9 +70,15 @@ JSON Structure:
       },
     });
 
-    const content = result.response.text();
+    let content = result.response.text();
     if (!content) {
       throw new Error('AI returned empty content');
+    }
+
+    // Robust JSON cleaning: strip any markdown code block wrapper if present
+    content = content.trim();
+    if (content.startsWith('```')) {
+      content = content.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
     }
 
     const parsedResult = JSON.parse(content);

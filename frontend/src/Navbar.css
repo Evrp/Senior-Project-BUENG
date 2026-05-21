@@ -27,40 +27,54 @@
 }
 
 /* Responsive Design for Mobile */
-@media screen and (max-width: 770px) {
+@media screen and (max-width: 768px) {
   .navbar-container {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
     z-index: 1000;
+    height: 68px;
+    border-radius: 24px;
+    flex-direction: row;
+    padding: 0.5rem;
+    align-items: center;
     background-color: var(--nav-background-light);
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
-    padding: 12px 0;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .navbar-container.dark-mode {
+    background-color: #23242b;
   }
 
   .menu-bar {
+    flex-direction: row;
     justify-content: space-around;
-    padding: 0 20px;
+    align-items: center;
+    margin: 0;
   }
 
   .menu-link {
+    flex: 1;
     flex-direction: column;
-    padding: 20px;
-    font-size: 0.8rem;
+    justify-content: center;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+    height: 100%;
+    font-size: 0.7rem;
     text-align: center;
-    border-radius: 0;
-  }
-  .menu-link:hover {
-    width: 61.6px;
-    height: 62px;
+    border-radius: 12px;
   }
 
-  .menu-link svg {
-    font-size: 1.5rem;
-    margin-bottom: 4px;
+  .icon-nav {
+    font-size: 1.4rem;
+    margin-bottom: 2px;
+  }
+
+  .text-nav {
+    font-size: 0.7rem;
+    font-weight: 500;
   }
 
   .logo-con {
@@ -70,7 +84,7 @@
   /* Safe area padding for modern devices */
   @supports (padding: max(0px)) {
     .navbar-container {
-      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      bottom: max(1rem, env(safe-area-inset-bottom));
     }
   }
 
@@ -260,66 +274,4 @@
   }
 }
 
-/* ===================================== */
-/* === MOBILE - Bottom Navigation Bar === */
-/* ===================================== */
-@media screen and (max-width: 768px) {
-  /* Adjust content padding to avoid overlap with bottom nav */
-  .content-wrapper,
-  .main-content {
-    padding-bottom: 100px;
-  }
-
-  .navbar-container {
-    flex-direction: row;
-    bottom: 1rem;
-    left: 1rem;
-    right: 1rem;
-    height: 68px;
-    border-radius: 24px;
-    padding: 0.5rem;
-    align-items: center;
-  }
-
-  .logo-con {
-    display: none; /* Hide logo on mobile to save space */
-  }
-
-  .menu-bar {
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-  }
-
-  .menu-link {
-    flex: none;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.25rem;
-    padding: 0.5rem 0;
-    height: 100%;
-  }
-
-  .icon-nav {
-    font-size: 1.4rem;
-  }
-
-  .text-nav {
-    font-size: 0.7rem;
-    font-weight: 500;
-  }
-
-  .logout-section {
-    display: contents; /* Make the logout section part of the flex container */
-  }
-
-  .logout-link {
-    flex: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    height: 100%;
-  }
-}
+/* Bottom mobile styles consolidated into the single max-width block at the top */

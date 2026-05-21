@@ -358,7 +358,15 @@ const calculateEventCompatibility = async ({ email, validItems, eventMap, subGen
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   });
 
-  const aiOutput = JSON.parse(result.response.text());
+  let rawOutput = result.response.text();
+  if (rawOutput) {
+    rawOutput = rawOutput.trim();
+    if (rawOutput.startsWith('```')) {
+      rawOutput = rawOutput.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
+    }
+  }
+
+  const aiOutput = JSON.parse(rawOutput || '{}');
   const aiScoresMap = new Map((aiOutput.scores || []).map((s) => [s.title, s]));
 
   const finalUpdateOps = [];

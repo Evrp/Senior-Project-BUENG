@@ -53,8 +53,37 @@ export const getModel = (taskType = null, config = {}) => {
   // Allow custom overrides if needed
   const finalModelName = config.model || modelName;
   
-  return genAI.getGenerativeModel({
+  const modelInstance = genAI.getGenerativeModel({
     model: finalModelName,
     ...config,
   });
+
+  // Dynamic fallback wrapper: intercept generateContent calls to fallback to stable models on error
+  const originalGenerateContent = modelInstance.generateContent.bind(modelInstance);
+  modelInstance.generateContent = async function (params) {
+    try {
+      return await originalGenerateContent(params);
+    } catch (error) {
+      const isModelError = error.message && (
+        error.message.includes('not found') || 
+        error.message.includes('not support') || 
+        error.message.includes('invalid') ||
+        error.message.includes('404')
+      );
+      console.warn(`[Gemini Fallback Warning] Model '${finalModelName}' failed. Retrying with stable 'gemini-1.5-flash'. Error: ${error.message}`);
+      try {
+        const fallbackModel = genAI.getGenerativeModel({
+          model: 'gemini-1.5-flash',
+          ...config,
+        });
+        return await fallbackModel.generateContent(params);
+      } catch (fallbackError) {
+        console.error(`[Gemini Fallback Error] Stable fallback also failed:`, fallbackError.message);
+        throw error; // Rethrow original error if fallback also fails
+      }
+    }
+  };
+
+  return modelInstance;
 };
+
