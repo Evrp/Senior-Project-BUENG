@@ -85,7 +85,7 @@ const Newcommu = () => {
   const handleNewRoom = (newRoom) => {
     // Let React Query handle state updates via invalidation from the creation mutation (if any)
     // Or for optimistic updates:
-    queryClient.setQueryData(["rooms"], (oldData) => [...oldData, newRoom]);
+    queryClient.setQueryData(["rooms"], (oldData) => Array.isArray(oldData) ? [...oldData, newRoom] : [newRoom]);
   };
 
   const handleDeleteSelectedRooms = () => {

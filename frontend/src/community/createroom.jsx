@@ -1,20 +1,20 @@
-import { useState } from "react";
-import { IoMdAddCircle, IoMdCloseCircle } from "react-icons/io";
-import api from "../server/api";
+import { useState } from 'react';
+import { IoMdAddCircle, IoMdCloseCircle } from 'react-icons/io';
+import api from '../server/api';
 import PropTypes from 'prop-types';
-import "./css/createroom.css";
+import './css/createroom.css';
 
 const CreateRoom = ({ onRoomCreated }) => {
   const [showForm, setShowForm] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [roomData, setRoomData] = useState({
-    name: "",
-    image: "",
-    description: "",
+    name: '',
+    image: '',
+    description: '',
     memberLimit: 50, // ค่าเริ่มต้น
-    type: "public", // ค่าเริ่มต้น
-    password: "", // เพิ่มฟิลด์รหัสผ่าน
-    tags: "", // เก็บเป็น string คั่นด้วย comma
+    type: 'public', // ค่าเริ่มต้น
+    password: '', // เพิ่มฟิลด์รหัสผ่าน
+    tags: '', // เก็บเป็น string คั่นด้วย comma
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,20 +22,23 @@ const CreateRoom = ({ onRoomCreated }) => {
     const { name, value, type, checked } = e.target;
     setRoomData({
       ...roomData,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === 'checkbox' ? checked : value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError(""); // Clear previous errors
+    setError(''); // Clear previous errors
 
     try {
       // แปลง tags string เป็น array
-      const tagsArray = roomData.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
+      const tagsArray = roomData.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean);
 
-      const res = await api.post(\`/api/createroom\`, {
+      const res = await api.post(`/api/createroom`, {
         ...roomData,
         tags: tagsArray,
         memberLimit: Number(roomData.memberLimit), // แปลงเป็นตัวเลข
@@ -47,22 +50,22 @@ const CreateRoom = ({ onRoomCreated }) => {
 
       // Reset form และปิด popup
       setRoomData({
-        name: "",
-        image: "",
-        description: "",
+        name: '',
+        image: '',
+        description: '',
         memberLimit: 50,
-        type: "public",
-        password: "",
-        tags: "",
+        type: 'public',
+        password: '',
+        tags: '',
       });
       setShowForm(false);
     } catch (err) {
-      console.error("เกิดข้อผิดพลาดในการสร้างห้อง:", err);
+      console.error('เกิดข้อผิดพลาดในการสร้างห้อง:', err);
       if (err.response && err.response.data && err.response.data.error) {
         // แสดง error ที่ได้จาก API
         setError(err.response.data.error);
       } else {
-        setError("เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง");
+        setError('เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง');
       }
     } finally {
       setIsSubmitting(false);
@@ -71,14 +74,14 @@ const CreateRoom = ({ onRoomCreated }) => {
 
   const handleCloseForm = () => {
     setShowForm(false);
-    setError(""); // Clear error message when closing
+    setError(''); // Clear error message when closing
   };
 
   return (
     <div className="create-room-bt">
-      <button className ="create-room-button" onClick={() => setShowForm(!showForm)}>
+      <button className="create-room-button" onClick={() => setShowForm(!showForm)}>
         {showForm ? <IoMdCloseCircle /> : <IoMdAddCircle />}
-        {showForm ? "Cancel" : "Create Room"}
+        {showForm ? 'Cancel' : 'Create Room'}
       </button>
 
       {showForm && (
@@ -153,7 +156,7 @@ const CreateRoom = ({ onRoomCreated }) => {
               </select>
 
               {/* --- รหัสผ่าน (ถ้าเป็นห้องส่วนตัว) --- */}
-              {roomData.type === "private" && (
+              {roomData.type === 'private' && (
                 <>
                   <label htmlFor="password">รหัสผ่านสำหรับเข้าห้อง:</label>
                   <input
@@ -164,7 +167,7 @@ const CreateRoom = ({ onRoomCreated }) => {
                     placeholder="ระบุรหัสผ่าน"
                     value={roomData.password}
                     onChange={handleChange}
-                    required={roomData.type === "private"}
+                    required={roomData.type === 'private'}
                   />
                 </>
               )}
@@ -182,7 +185,7 @@ const CreateRoom = ({ onRoomCreated }) => {
               />
 
               <button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "กำลังสร้าง..." : "ยืนยันสร้างห้อง"}
+                {isSubmitting ? 'กำลังสร้าง...' : 'ยืนยันสร้างห้อง'}
               </button>
             </form>
           </div>

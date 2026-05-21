@@ -30,7 +30,7 @@ const RoomList = ({
   const { data: joinedRoomIds = [], isLoading: isLoadingJoined } = useQuery({
     queryKey: ['userJoinedRooms', userEmail],
     queryFn: async () => {
-      const filterjoinedRooms = await api.get(\`/api/user-rooms/\${userEmail}\`);
+      const filterjoinedRooms = await api.get(`/api/user-rooms/${userEmail}`);
       return Array.isArray(filterjoinedRooms.data.roomIds)
         ? filterjoinedRooms.data.roomIds.filter((id) => !!id)
         : [];
@@ -50,7 +50,7 @@ const RoomList = ({
 
   const handleAddCommunity = async (roomId, roomName, password = null) => {
     try {
-      const res = await api.post(\`/api/join-community\`, {
+      const res = await api.post('/api/join-community', {
         userEmail,
         roomId,
         roomName,
@@ -58,11 +58,11 @@ const RoomList = ({
       });
       if (res.status === 200 || res.status === 201) {
         toast.success('เข้าร่วมห้องสําเร็จ!');
-        navigate(\`/chat/\${roomId}\`);
+        navigate(`/chat/${roomId}`);
       }
     } catch (error) {
       if (error.response && error.response.status === 409) {
-        navigate(\`/chat/\${roomId}\`);
+        navigate(`/chat/${roomId}`);
         return;
       }
       console.error('Error adding community:', error);
@@ -72,9 +72,14 @@ const RoomList = ({
 
   const handleRoomClick = (room) => {
     if (isDeleteMode) {
-      handleRoomSelect(room._id);
+      const isCreator = room.createdBy && userEmail && room.createdBy.toLowerCase() === userEmail.toLowerCase();
+      if (isCreator) {
+        handleRoomSelect(room._id);
+      } else {
+        toast.error('คุณสามารถลบได้เฉพาะห้องที่คุณเป็นผู้สร้างเท่านั้น');
+      }
     } else if (showOnlyMyRooms || isJoined(room._id)) {
-      navigate(\`/chat/\${room._id}\`);
+      navigate(`/chat/${room._id}`);
     } else {
       if (room.type === 'private') {
         const password = window.prompt('ห้องนี้เป็นห้องส่วนตัว กรุณาระบุรหัสผ่าน:');
@@ -93,7 +98,7 @@ const RoomList = ({
   const isLoading = isLoadingRooms || isLoadingJoined;
 
   return (
-    <section className={\`roomlist-section \${isDarkMode ? 'dark-mode' : ''}\`}>
+    <section className={`roomlist-section ${isDarkMode ? 'dark-mode' : ''}`}>
       <header className="roomlist-header"></header>
       <div className="room-list">
         {isLoading ? (
@@ -114,15 +119,15 @@ const RoomList = ({
           filteredRooms.map((room) => (
             <div
               key={room._id}
-              className={\`room-container card-room \${
+              className={`room-container card-room ${
                 selectedRooms.includes(room._id) ? 'selected' : ''
-              }\`}
+              }`}
               onClick={() => handleRoomClick(room)}
             >
               <div className="room-image-wrap">
                 <UserAvatar src={room.image} alt="room" className="room-image" />
 
-                {isDeleteMode && (
+                {isDeleteMode && room.createdBy && userEmail && room.createdBy.toLowerCase() === userEmail.toLowerCase() && (
                   <div className="room-checkbox">
                     <input
                       type="checkbox"
@@ -132,7 +137,7 @@ const RoomList = ({
                     />
                   </div>
                 )}
-                
+
                 {room.type === 'private' && (
                   <div className="room-private-badge" title="ห้องส่วนตัว">
                     <FaLock />
@@ -149,7 +154,7 @@ const RoomList = ({
                   </div>
                   {!showOnlyMyRooms && (
                     <button
-                      className={\`join-button \${isJoined(room._id) ? 'joined' : ''}\`}
+                      className={`join-button ${isJoined(room._id) ? 'joined' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent card click
                         handleRoomClick(room);

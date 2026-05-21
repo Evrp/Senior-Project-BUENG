@@ -15,6 +15,9 @@ router.post('/join-community', requireOwner, async (req, res) => {
     return res.status(400).json({ error: 'กรุณาระบุ userEmail, roomId, และ roomName' });
   }
 
+  // Safe lowercasing for userEmail
+  const targetEmail = userEmail.trim().toLowerCase();
+
   try {
     const room = await Room.findById(roomId);
     if (!room) {
@@ -31,10 +34,16 @@ router.post('/join-community', requireOwner, async (req, res) => {
       }
     }
 
+    // BUG-03: Enforce Capacity Limits
+    const currentMemberCount = await Info.countDocuments({ 'joinedRooms.roomId': roomId });
+    if (currentMemberCount >= room.memberLimit) {
+      return res.status(403).json({ error: `ห้องนี้เต็มแล้ว (จำกัดสมาชิกสูงสุด ${room.memberLimit} คน)` });
+    }
+
+    // BUG-04: Fix joinedRooms duplicate/corruption logic (Query by roomId only)
     const existingRoom = await Info.findOne({
-      email: userEmail,
+      email: targetEmail,
       'joinedRooms.roomId': roomId,
-      'joinedRooms.roomName': roomName,
     });
 
     if (existingRoom) {
@@ -43,7 +52,7 @@ router.post('/join-community', requireOwner, async (req, res) => {
 
     // Use $addToSet to prevent duplicate entries
     const updatedUser = await Info.findOneAndUpdate(
-      { email: userEmail },
+      { email: targetEmail },
       { $addToSet: { joinedRooms: { roomId, roomName } } },
       { new: true, runValidators: true, upsert: true }
     );
@@ -214,6 +223,21 @@ router.post('/delete-rooms', requireOwner, async (req, res) => {
     return res.status(400).json({ message: 'No room IDs provided' });
   }
   try {
+    // BUG-01: Verify creator or admin ownership before deleting
+    const roomsToDelete = await Room.find({ _id: { $in: selectedRooms } });
+    const isUserAdmin = req.user && req.user.isAdmin;
+    const userEmail = req.user.email;
+
+    const unauthorized = roomsToDelete.some(
+      (room) => room.createdBy !== userEmail && !isUserAdmin
+    );
+
+    if (unauthorized) {
+      return res.status(403).json({
+        error: 'Forbidden: คุณไม่มีสิทธิ์ในการลบห้องบางห้องที่เลือก (สามารถลบได้เฉพาะห้องที่คุณสร้างขึ้นเท่านั้น)',
+      });
+    }
+
     const deletedRooms = await Room.deleteMany({ _id: { $in: selectedRooms } });
     const result = await Info.updateMany(
       {},
