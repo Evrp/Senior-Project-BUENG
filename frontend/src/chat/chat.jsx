@@ -263,6 +263,12 @@ const ChatWindow = ({
   loadingMessages,
   isDefaultRoom,
 }) => {
+  const [isMobileInfoOpen, setIsMobileInfoOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMobileInfoOpen(false);
+  }, [RoomsBar?.roomId]);
+
   return (
     <div className={`bg-chat-con ${openchat ? 'mobile-layout-mode' : ''}`}>
       <ChatPanel
@@ -285,8 +291,18 @@ const ChatWindow = ({
         defaultProfileImage={defaultProfileImage}
         formatChatDate={formatChatDate}
         disabled={isDefaultRoom}
+        onToggleInfo={() => setIsMobileInfoOpen((prev) => !prev)}
       />
-      <div className="tabright">
+      <div className={`tabright ${isMobileInfoOpen ? 'mobile-active' : ''}`}>
+        {isMobileInfoOpen && (
+          <button
+            className="close-info-mobile"
+            onClick={() => setIsMobileInfoOpen(false)}
+            title="ปิดข้อมูล"
+          >
+            <MdClose />
+          </button>
+        )}
         <ShowTitle userimage={userImage} openchat={openchat} />
         <ChatContainerAI
           loadingMessages={loadingMessages}

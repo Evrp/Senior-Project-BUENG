@@ -1,11 +1,12 @@
 /* Chat.css */
 
 .chat-container {
-  width: 60%;
+  flex: 1.4;
+  min-width: 0;
   background-color: #f8f9fa;
   height: 100%;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
+  border-radius: 16px;
   overflow: hidden;
   transition: all 0.3s ease;
   display: flex;
@@ -345,12 +346,13 @@
 }
 
 .bg-chat-con {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   height: 100%;
   display: flex;
   flex-direction: row;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
   gap: 20px;
   padding: 20px;
   overflow: hidden;
@@ -672,9 +674,11 @@
 
 .main-container {
   display: flex;
-  align-items: start;
-  /* จัดให้อยู่ตรงกลางแนวตั้ง */
-  inline-size: 100%;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .user-container {
@@ -2346,4 +2350,320 @@
 
 .spinner {
   animation: spin 1s linear infinite;
+}
+
+/* ==========================================================================
+   SENIOR RESPONSIVE MOBILE & TABLET UPGRADES (OVERLAYS, DRAWER & HEADER RESETS)
+   ========================================================================== */
+
+/* Hidden on desktop by default */
+.info-button-mobile {
+  display: none;
+}
+.close-info-mobile {
+  display: none;
+}
+
+/* 1. Header Flex Layout & Center Alignment for Mobile Screen */
+@media screen and (max-width: 990px) {
+  .show-info.mobile-layout-mode {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    position: relative !important;
+    width: 100% !important;
+    height: 70px !important;
+    padding: 0 60px !important; /* Leave absolute space for back and info buttons */
+    background: #ffffff !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02) !important;
+  }
+
+  .dark-mode .show-info.mobile-layout-mode {
+    background: #242526 !important;
+    border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .center-mobile {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    position: static !important; /* Clear fixed positioning */
+    width: auto !important;
+    flex: 1 !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .chat-profile.mobile-layout-mode {
+    width: 42px !important;
+    height: 42px !important;
+    margin: 0 !important;
+    border-radius: 50% !important;
+    border: 2px solid #6366f1 !important;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2) !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease !important;
+  }
+
+  .dark-mode .chat-profile.mobile-layout-mode {
+    border-color: #818cf8 !important;
+    box-shadow: 0 2px 8px rgba(129, 140, 248, 0.3) !important;
+  }
+
+  .chat-profile.mobile-layout-mode:active {
+    transform: scale(0.95) !important;
+  }
+
+  /* Restore Chat Title name on mobile */
+  .chat-title.mobile-layout-mode {
+    display: block !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    color: #1f2937 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 150px !important;
+    text-align: left !important;
+  }
+
+  .dark-mode .chat-title.mobile-layout-mode {
+    color: #f3f4f6 !important;
+  }
+
+  /* Fixed Absolute Positions for Top Bar Nav Actions */
+  .back-button-mobile.mobile-layout-mode {
+    display: flex !important;
+    position: absolute !important;
+    left: 15px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    z-index: 100 !important;
+  }
+
+  .info-button-mobile {
+    display: flex !important;
+    position: absolute !important;
+    right: 15px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    background: transparent !important;
+    border: none !important;
+    color: #6366f1 !important;
+    font-size: 22px !important;
+    cursor: pointer !important;
+    width: 38px !important;
+    height: 38px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    transition: all 0.2s ease !important;
+    z-index: 100 !important;
+    touch-action: manipulation !important;
+  }
+
+  .info-button-mobile:hover {
+    background-color: rgba(99, 102, 241, 0.08) !important;
+  }
+
+  .info-button-mobile:active {
+    transform: translateY(-50%) scale(0.9) !important;
+    background-color: rgba(99, 102, 241, 0.15) !important;
+  }
+
+  .dark-mode .info-button-mobile {
+    color: #818cf8 !important;
+  }
+
+  .dark-mode .info-button-mobile:hover {
+    background-color: rgba(129, 140, 248, 0.08) !important;
+  }
+
+  /* 2. Slide-out Info Drawer overlay on Mobile */
+  .bg-chat-con.mobile-layout-mode .tabright {
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 85vw !important;
+    max-width: 360px !important;
+    height: 100dvh !important;
+    background: #ffffff !important;
+    z-index: 10000 !important;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15) !important;
+    padding: 60px 15px 20px 15px !important;
+    flex-direction: column !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transform: translateX(100%) !important;
+    overflow-y: auto !important;
+  }
+
+  .dark-mode .bg-chat-con.mobile-layout-mode .tabright {
+    background: #18191a !important;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  /* When drawer is toggled active */
+  .bg-chat-con.mobile-layout-mode .tabright.mobile-active {
+    transform: translateX(0) !important;
+  }
+
+  /* Mobile Close button inside drawer */
+  .close-info-mobile {
+    display: flex !important;
+    position: absolute !important;
+    top: 15px !important;
+    left: 15px !important;
+    background: transparent !important;
+    border: none !important;
+    font-size: 24px !important;
+    color: #ef4444 !important;
+    cursor: pointer !important;
+    z-index: 10100 !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1) !important;
+  }
+
+  .close-info-mobile:active {
+    transform: scale(0.9) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+  }
+
+  /* 3. Message Input Area Glassmorphic Upgrades on Mobile */
+  .chat-input-container {
+    padding: 10px 12px 15px 12px !important;
+    background: transparent !important;
+    border-top: none !important;
+  }
+
+  .chat-border {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+    border-radius: 28px !important;
+    padding: 4px 12px 4px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 8px !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+  }
+
+  .chat-border:focus-within {
+    border-color: rgba(99, 102, 241, 0.4) !important;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1) !important;
+  }
+
+  .dark-mode .chat-border {
+    background: rgba(36, 37, 38, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .dark-mode .chat-border:focus-within {
+    border-color: rgba(129, 140, 248, 0.4) !important;
+    box-shadow: 0 4px 20px rgba(129, 140, 248, 0.2) !important;
+  }
+
+  .chat-input {
+    font-size: 14px !important;
+    flex: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    padding: 8px 0 !important;
+    color: #1f2937 !important;
+  }
+
+  .dark-mode .chat-input {
+    color: #f3f4f6 !important;
+  }
+
+  /* 4. Chat Bubble Text Area Fix */
+  .chat-box {
+    height: calc(100vh - 190px) !important;
+    padding: 15px 10px !important;
+  }
+}
+
+/* 5. Mobile Landscape adjustments */
+@media screen and (max-height: 500px) and (max-width: 990px) {
+  .bg-chat-con.mobile-layout-mode .tabright {
+    padding-top: 50px !important;
+  }
+  .chat-box {
+    height: calc(100vh - 150px) !important;
+  }
+}
+
+/* ==========================================================================
+   PREMIUM DESKTOP TABRIGHT & AI CHAT CONTAINER RECONSTRUCTION
+   ========================================================================== */
+@media screen and (min-width: 991px) {
+  .tabright {
+    flex: 1 !important;
+    max-width: 400px !important;
+    min-width: 320px !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important;
+    overflow: hidden !important;
+  }
+
+  .tabright .bg-title {
+    margin-bottom: 0 !important;
+    max-height: 42% !important;
+    overflow-y: auto !important;
+    flex-shrink: 0 !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  }
+
+  .dark-mode .tabright .bg-title {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .tabright .chat-container-ai {
+    flex: 1 !important;
+    height: auto !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    overflow: hidden !important;
+    background-color: #ffffff !important;
+  }
+
+  .dark-mode .tabright .chat-container-ai {
+    background-color: #242526 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  /* Internal scrolling inside AI assistant chat box */
+  .tabright .chat-box-ai {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 16px !important;
+  }
 }

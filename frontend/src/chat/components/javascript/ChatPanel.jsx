@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { IoIosArrowBack, IoMdSend } from 'react-icons/io';
+import { FaUsers } from 'react-icons/fa';
 import PropTypes from 'prop-types';
 import ProfileModal from './ProfileModal';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +23,7 @@ const ChatPanel = ({
 
   formatChatDate,
   disabled,
+  onToggleInfo,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -130,6 +132,15 @@ const ChatPanel = ({
             );
           })()}
         </h2>
+        {!disabled && (
+          <button
+            className="info-button-mobile"
+            onClick={onToggleInfo}
+            title="ดูข้อมูลและสมาชิก"
+          >
+            <FaUsers />
+          </button>
+        )}
       </div>
       <div className="chat-box">
         {messages.length === 0 ? (
@@ -256,4 +267,5 @@ ChatPanel.propTypes = {
   formatChatDate: PropTypes.func.isRequired,
   setFriends: PropTypes.func.isRequired,
   disabled: PropTypes.bool,
+  onToggleInfo: PropTypes.func,
 };
