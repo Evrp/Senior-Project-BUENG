@@ -509,12 +509,14 @@ const Chat = () => {
   // Derived state for friends list
 
   const processedFriends = useMemo(() => {
-    if (currentUser && Array.isArray(currentUser) && users.length > 0) {
+    if (currentUser && Array.isArray(currentUser) && users.length > 0 && userEmail) {
       const friendEmails = currentUser.map((f) => f.email);
       return users
         .filter((user) => friendEmails.includes(user.email))
         .map((user) => {
           const userInfo = infos.find((info) => info.email === user.email);
+          const emails = [userEmail, user.email].sort();
+          const friendRoomId = `room__${emails[0]}__${emails[1]}`;
           return {
             photoURL: user.photoURL,
             email: user.email,
@@ -522,12 +524,13 @@ const Chat = () => {
             nickname: userInfo?.nickname,
             _id: user._id,
             isOnline: user.isOnline || false,
+            roomId: friendRoomId,
           };
         })
         .sort((a, b) => a.displayName.localeCompare(b.displayName));
     }
     return [];
-  }, [currentUser, users, infos]);
+  }, [currentUser, users, infos, userEmail]);
 
   useEffect(() => {
     if (processedFriends && processedFriends.length > 0) {
@@ -769,8 +772,14 @@ const Chat = () => {
 
         if (isMySentMsg || isMyRecvMsg) {
           const otherEmail = isMySentMsg ? msg.receiver : msg.sender;
-          if (!latest[otherEmail]) {
-            latest[otherEmail] = msg;
+          // Build unique direct room ID as a fallback for old messages without roomId
+          const emails = [userEmail, otherEmail].sort();
+          const fallbackRoomId = `room__${emails[0]}__${emails[1]}`;
+          
+          const keyRoomId = (msg.roomId && msg.roomId !== 'direct') ? msg.roomId : fallbackRoomId;
+
+          if (!latest[keyRoomId]) {
+            latest[keyRoomId] = msg;
           }
         }
       });
@@ -798,8 +807,8 @@ const Chat = () => {
     if (a?.email && b?.email) {
       if (isOnline(a.email) && !isOnline(b.email)) return -1;
       if (!isOnline(a.email) && isOnline(b.email)) return 1;
-      const timeA = lastMessages[a.email]?.timestamp?.toDate()?.getTime() || 0;
-      const timeB = lastMessages[b.email]?.timestamp?.toDate()?.getTime() || 0;
+      const timeA = lastMessages[a.roomId]?.timestamp?.toDate()?.getTime() || 0;
+      const timeB = lastMessages[b.roomId]?.timestamp?.toDate()?.getTime() || 0;
       return timeB - timeA;
     }
     return 0;

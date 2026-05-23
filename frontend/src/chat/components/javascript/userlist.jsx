@@ -95,11 +95,11 @@ const ListUser = ({
                       </span>
                       <div className="row-last-time">
                         <span className="last-message">
-                          {lastMessages[friend.email]?.content || 'ยังไม่มีข้อความ'}
+                          {lastMessages[friend.roomId]?.content || 'ยังไม่มีข้อความ'}
                         </span>
                         <span className="message-time">
-                          {lastMessages[friend.email]?.timestamp &&
-                            formatRelativeTime(lastMessages[friend.email].timestamp.toDate())}
+                          {lastMessages[friend.roomId]?.timestamp &&
+                            formatRelativeTime(lastMessages[friend.roomId].timestamp.toDate())}
                         </span>
                       </div>
                     </div>
