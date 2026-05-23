@@ -103,6 +103,7 @@ app.get('/:roomId', async (req, res) => {
 
 // GET /api/aichat/:roomId/insight - Generate a quick insight/ice-breaker for the room
 app.get('/:roomId/insight', async (req, res) => {
+  let eventInfo = 'กิจกรรม';
   try {
     const { roomId } = req.params;
     const match = await InfoMatch.findById(roomId);
@@ -111,7 +112,7 @@ app.get('/:roomId/insight', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Match context not found' });
     }
 
-    const eventInfo = match.detail || 'กิจกรรม';
+    eventInfo = match.detail || 'กิจกรรม';
     const systemPrompt = `
 Role: BUENG AI
 Task: สร้างประโยคทักทายสั้นๆ หรือ Fun Fact เกี่ยวกับ "${eventInfo}" เพื่อเริ่มบทสนทนา (Ice Breaking)
@@ -136,8 +137,10 @@ Language: Thai`;
     const insight = result.response.text();
     res.status(200).json({ success: true, data: insight });
   } catch (error) {
-    console.error('AI Insight Error:', error);
-    res.status(500).json({ success: false, message: 'Error generating insight.' });
+    console.error('AI Insight Error (using friendly fallback):', error);
+    // Provide a beautiful, context-aware Thai ice-breaker fallback instead of returning a 500 error
+    const fallbackInsight = `สวัสดีครับ! ยินดีที่ได้แมตช์เจอกันนะครับ มาพูดคุยและร่วมสนุกในกิจกรรม "${eventInfo}" ไปด้วยกันเลยครับ! ✨`;
+    res.status(200).json({ success: true, data: fallbackInsight });
   }
 });
 

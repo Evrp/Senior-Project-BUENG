@@ -230,12 +230,22 @@ const ShowTitle = ({ userimage, openchat }) => {
               .dark-mode .event-info-wrapper {
                 color: #f3f4f6;
               }
+              .title-header {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+              }
               .event-title-image {
-                width: 100%;
-                max-height: 160px;
-                object-fit: cover;
-                border-radius: 12px;
-                margin-bottom: 12px;
+                width: 100% !important;
+                height: 160px !important;
+                object-fit: cover !important;
+                border-radius: 12px !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+                margin-bottom: 0 !important;
+              }
+              .dark-mode .event-title-image {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
               }
               .usertitle {
                 font-size: 1.25rem;
