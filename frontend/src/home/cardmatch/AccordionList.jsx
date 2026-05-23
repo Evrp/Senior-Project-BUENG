@@ -348,6 +348,40 @@ const AccordionList = ({ items, setWaiting }) => {
             </div>
 
             <div className="drawer-scroll-content">
+              {/* Advanced filters inside drawer */}
+              <div className="drawer-advanced-filters">
+                <div className="drawer-filter-group">
+                  <label className="drawer-filter-label">
+                    <FaCalendarAlt style={{ marginRight: '6px', color: 'var(--primary-color)' }} />
+                    When
+                  </label>
+                  <select
+                    className="drawer-filter-select"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                  >
+                    {DATE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="drawer-filter-group">
+                  <label className="drawer-filter-label">
+                    <FaMapMarkerAlt style={{ marginRight: '6px', color: 'var(--primary-color)' }} />
+                    Where
+                  </label>
+                  <input
+                    type="text"
+                    className="drawer-filter-input"
+                    placeholder="Location..."
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                  />
+                </div>
+              </div>
+
               {genreSearch && !hasMatches && (
                 <div className="no-matches-suggestion">
                   <p>ไม่พบหมวดหมู่ที่ตรงกัน</p>

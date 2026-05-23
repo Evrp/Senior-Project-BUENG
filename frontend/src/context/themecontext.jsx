@@ -11,10 +11,15 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     const html = document.documentElement;
+    const body = document.body;
     if (isDarkMode) {
       html.classList.add("dark");
+      html.classList.add("dark-mode");
+      body.classList.add("dark-mode");
     } else {
       html.classList.remove("dark");
+      html.classList.remove("dark-mode");
+      body.classList.remove("dark-mode");
     }
     localStorage.setItem("darkMode", isDarkMode);
   }, [isDarkMode]);

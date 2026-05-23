@@ -44,7 +44,9 @@
   }
 
   .navbar-container.dark-mode {
-    background-color: #23242b;
+    background-color: rgba(18, 20, 29, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
   }
 
   .menu-bar {
@@ -124,8 +126,9 @@
 
 /* Dark Mode */
 .navbar-container.dark-mode {
-  background-color: #23242b;
-  border: 1px solid var(--nav-border-dark);
+  background-color: rgba(18, 20, 29, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
 }
 
 /* === Logo === */

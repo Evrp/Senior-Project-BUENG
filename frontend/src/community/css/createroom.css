@@ -275,3 +275,45 @@
       transform 0.13s;
   }
 }
+
+/* ==========================================
+   Dark Mode Overrides for Room Creation Popup
+   ========================================== */
+.dark-mode .popup-form {
+  background: #1e293b !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid #334155 !important;
+}
+
+.dark-mode .popup-form h3 {
+  color: #a5b4fc !important; /* Soft indigo heading */
+}
+
+.dark-mode .popup-form label {
+  color: #94a3b8 !important; /* Light gray text for inputs */
+}
+
+.dark-mode .popup-form .commu-input {
+  background: #0f172a !important; /* Slate 900 */
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .popup-form .commu-input:focus {
+  border-color: #6c63ff !important;
+  background: #0f172a !important;
+  box-shadow: 0 2px 8px 0 rgba(108, 99, 255, 0.15) !important;
+}
+
+.dark-mode .popup-form .commu-input option {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .popup-form .close-popup-btn {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .popup-form .close-popup-btn:hover {
+  color: #f1f5f9 !important;
+}

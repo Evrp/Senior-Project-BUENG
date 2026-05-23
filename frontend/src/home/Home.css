@@ -70,7 +70,7 @@
 .dark-mode .main-con-home {
   flex-grow: 1;
   overflow-y: auto;
-  background-color: #4d4d4d;
+  background-color: #0b0f19;
 }
 
 .header {
@@ -80,7 +80,7 @@
 }
 
 .dark-mode .profile-section {
-  background-color: #23242b;
+  background-color: rgba(19, 21, 29, 0.95);
 }
 
 .profile-pic {
@@ -162,7 +162,7 @@
   background-color: #f5f5f5;
 }
 .dark-mode .bg-event-con {
-  background-color: #23242b;
+  background-color: #0b0f19;
 }
 .show-commu {
   display: flex;
@@ -172,7 +172,7 @@
   background-color: #f5f5f5;
 }
 .dark-mode .show-commu {
-  background-color: #23242b;
+  background-color: #0b0f19;
 }
 
 /* --- Modern Home header styles --- */
@@ -190,9 +190,9 @@
   border-bottom: 1px solid rgb(194, 181, 181);
 }
 .dark-mode .header-home {
-  background-color: #23242b;
-  box-shadow: 0 2px 20px #23242b22;
-  border-bottom: 1px solid rgb(0, 0, 0);
+  background-color: #0b0f19;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .bell-btn-home {
   background: none;

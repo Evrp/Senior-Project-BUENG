@@ -232,11 +232,11 @@
   scroll-behavior: smooth; */
 }
 .dark-mode .room-match-container {
-  background-color: #23242b;
+  background-color: #0b0f19;
 }
 
 .dark-mode {
-  background-color: #23242b;
+  background-color: #0b0f19;
   color: white;
 }
 
@@ -323,12 +323,18 @@
 }
 
 .dark-mode .room-card-match {
-  background: #23242b;
-  box-shadow: 0 6px 32px 0 rgba(30, 32, 38, 0.18);
+  background: rgba(30, 32, 40, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
 }
 
 .dark-mode .room-match-info {
-  background: rgba(36, 38, 56, 0.8);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(13, 14, 18, 0.7) 30%,
+    rgba(13, 14, 18, 0.98) 100%
+  );
   color: #fff;
 }
 
@@ -406,24 +412,32 @@
   }
 }
 
-/* Dark mode */
+/* Dark mode button styling */
 .dark-mode .skip-button {
-  background: #2d2e3a;
-  color: #ecebfa;
-  box-shadow: 0 2px 12px #23242b44;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.05);
 }
+
 .dark-mode .skip-button:hover:not(:disabled) {
-  background: #554eea33;
+  background: rgba(239, 68, 68, 0.25);
   color: #fff;
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
 }
+
 .dark-mode .join-button {
-  background: linear-gradient(90deg, #554eea 60%, #6c63ff 100%);
-  color: #ecebfa;
-  box-shadow: 0 2px 12px #23242b77;
-}
-.dark-mode .join-button:hover:not(:disabled) {
-  background: #6c63ff;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
   color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
+}
+
+.dark-mode .join-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9b6bf7, #7275f2);
+  box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
 }
 
 /* Responsive Design for RoomMatch */
@@ -498,8 +512,11 @@
   }
 
   .card-stack {
-    max-width: 280px;
-    height: 420px;
+    max-width: 320px;
+    width: 90vw;
+    height: 52vh;
+    min-height: 340px;
+    max-height: 460px;
   }
 
   .room-card-match {
@@ -559,8 +576,11 @@
   }
 
   .card-stack {
-    max-width: 260px;
-    height: 380px;
+    max-width: 310px;
+    width: 92vw;
+    height: 52vh;
+    min-height: 330px;
+    max-height: 440px;
   }
 
   .room-card-match {
@@ -568,34 +588,33 @@
   }
 
   .room-match-info {
-    padding: 8px 12px 2px 12px;
-    min-height: 30px;
+    padding: 10px 14px 4px 14px;
+    min-height: 40px;
     border-bottom-left-radius: 16px;
     border-bottom-right-radius: 16px;
   }
 
   .room-match-info h4 {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     margin: 0 0 2px 0;
   }
 
   .room-match-info p {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .button-group {
     gap: 1rem;
     margin-top: 12px;
-    position: absolute;
-    top: auto;
-    bottom: 90px;
+    position: relative;
+    bottom: auto;
   }
 
   .skip-button,
   .join-button {
-    padding: 0.4rem 1rem;
-    font-size: 0.85rem;
-    border-radius: 1.3rem;
+    padding: 0.45rem 1.4rem;
+    font-size: 0.9rem;
+    border-radius: 1.5rem;
   }
 
   .room-chance {
@@ -607,8 +626,8 @@
   }
 
   .tinder-card.loading-card {
-    width: 260px;
-    min-height: 260px;
+    width: 310px;
+    min-height: 310px;
     border-radius: 16px;
   }
 
@@ -620,45 +639,15 @@
     width: 12px;
     height: 12px;
   }
+
   .roommatch-tindercard-loading {
-    width: 200px;
-    height: 100px;
+    width: 280px;
+    height: 150px;
   }
+
   .roommatch-tindercard-loading-text {
-    font-size: 10px;
-    padding: 8px 16px;
-  }
-  .roommatch-tindercard-loading {
-    width: 200px;
-    height: 100px;
-  }
-  .roommatch-tindercard-loading-text {
-    font-size: 10px;
+    font-size: 0.85rem;
     padding: 0px 10px;
-  }
-
-  .card-stack {
-    max-width: 240px;
-    height: 300px;
-  }
-
-  .room-match-info h4 {
-    font-size: 0.9rem;
-  }
-
-  .room-match-info p {
-    font-size: 0.65rem;
-  }
-
-  .skip-button,
-  .join-button {
-    padding: 0.3rem 0.8rem;
-    font-size: 0.8rem;
-  }
-
-  .tinder-card.loading-card {
-    width: 240px;
-    min-height: 240px;
   }
 }
 

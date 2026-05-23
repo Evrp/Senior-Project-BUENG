@@ -11,8 +11,9 @@
 }
 
 .dark-mode .genre-grid-container {
-  background: #1e1e1e;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background: #1e293b;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 .search-bar-wrapper {
@@ -25,7 +26,8 @@
 }
 
 .dark-mode .search-bar-wrapper {
-  background-color: #2d2d2d;
+  background-color: #0f172a;
+  border: 1px solid #334155;
 }
 
 .search-icon {
@@ -82,7 +84,7 @@
 }
 
 .dark-mode .genre-item:hover {
-  background-color: #2d2d2d;
+  background-color: #334155;
 }
 
 .genre-item.selected {

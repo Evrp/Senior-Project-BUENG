@@ -24,6 +24,34 @@ a:hover {
 }
 body {
   font-family: "Poppins", sans-serif;
-  /* background: linear-gradient(100deg, #5de0e6, #004aad); */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Global Dark Mode Styles */
+.dark-mode {
+  background-color: #0b0f19 !important;
+  color: #f8fafc;
+}
+
+.dark-mode body {
+  background-color: #0b0f19 !important;
+  color: #f8fafc;
+}
+
+/* Premium Dark Mode Scrollbars */
+.dark-mode ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.dark-mode ::-webkit-scrollbar-track {
+  background: #0b0f19;
+}
+.dark-mode ::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border: 2px solid #0b0f19;
+  border-radius: 9999px;
+}
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }
 

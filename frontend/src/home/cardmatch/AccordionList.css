@@ -10,14 +10,14 @@
 }
 
 .dark-mode {
-  --app-bg: #0f172a;
-  --card-bg: #1e293b;
-  --border-color: #334155;
-  --primary-color: #818cf8;
-  --primary-light: #312e81;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --chip-bg: #374151;
+  --app-bg: #0b0f19;
+  --card-bg: #13151d;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --primary-color: #8b5cf6;
+  --primary-light: rgba(139, 92, 246, 0.15);
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --chip-bg: rgba(255, 255, 255, 0.06);
 }
 
 /* --- Sticky Filter Bar Wrapper --- */
@@ -26,7 +26,7 @@
   top: 0;
   z-index: 1100;
   /* background-color: var(--app-bg); */
-  padding: 1rem 0;
+  padding: 1rem 0 0.2rem 0;
   margin-bottom: 0.5rem;
 }
 
@@ -171,7 +171,7 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin: 0.75rem auto;
+  margin: 0.25rem auto;
   max-width: 850px;
   animation: fadeIn 0.3s ease;
 }
@@ -349,25 +349,63 @@
 
 @media (max-width: 768px) {
   .compact-filter-bar {
-    border-radius: 24px;
-    padding: 0.5rem;
-    flex-wrap: wrap;
-    gap: 0;
+    max-width: 95%;
+    flex-wrap: nowrap !important;
+    border-radius: 99px !important;
+    padding: 0.25rem 0.5rem !important;
+    gap: 0.25rem !important;
+    height: 48px;
   }
-  .filter-divider { display: none; }
-  .filter-item { 
-    padding: 0.5rem; 
-    border-bottom: 1px solid var(--border-color);
-    flex: 1 1 100%;
+  
+  .filter-divider {
+    display: none !important;
   }
-  .filter-item:last-of-type { border-bottom: none; }
+  
+  /* Hide the Date and Location fields in the main bar on mobile */
+  .compact-filter-bar .filter-item:not(.search-box) {
+    display: none !important;
+  }
+  
+  .compact-filter-bar .filter-item.search-box {
+    flex: 1;
+    padding: 0.25rem 0.5rem !important;
+  }
+  
+  .compact-filter-bar .filter-item.search-box input {
+    font-size: 0.85rem;
+  }
+  
+  .compact-filter-bar .filter-item.search-box .icon {
+    font-size: 0.85rem;
+  }
+  
   .filter-actions-group {
-    width: 100%;
-    justify-content: space-between;
-    padding: 0.75rem 0.5rem 0.25rem;
-    border-top: 1px solid var(--border-color);
+    width: auto !important;
+    border-top: none !important;
+    padding: 0 !important;
+    gap: 0.25rem !important;
   }
-  .drawer-toggle-btn { flex: 1; justify-content: center; }
+  
+  .manual-search-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.8rem;
+  }
+  
+  .drawer-toggle-btn {
+    height: 32px !important;
+    padding: 0 0.6rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .drawer-toggle-btn .btn-label {
+    display: none !important; /* Hide 'Categories' text to keep it ultra compact */
+  }
+  
+  .drawer-toggle-btn.active .btn-label {
+    display: inline !important; /* Show selection count active badge */
+  }
+  
   .categories-drawer { 
     bottom: 0; 
     top: auto; 
@@ -375,10 +413,60 @@
     transform: none; 
     width: 100%; 
     border-radius: 24px 24px 0 0; 
-    max-height: 90vh; 
+    max-height: 85vh; 
     animation: slideUpMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .btn-label { display: block !important; }
+}
+
+/* --- Advanced Filters inside the Drawer overlay --- */
+.drawer-advanced-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.drawer-filter-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.drawer-filter-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.drawer-filter-select,
+.drawer-filter-input {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--chip-bg);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.drawer-filter-select:focus,
+.drawer-filter-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.dark-mode .drawer-filter-select option {
+  background-color: var(--card-bg);
+  color: var(--text-main);
 }
 
 /* --- Custom Keyword Search Suggestion --- */

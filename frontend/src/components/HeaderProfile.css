@@ -52,7 +52,7 @@
 }
 
 .dark-mode .notifications-badge {
-  border-color: #1f2937;
+  border-color: #1e293b;
 }
 
 .row-profile-header{
@@ -81,8 +81,8 @@
 }
 
 .notification-dropdown.dark-mode {
-  background-color: #1f2937;
-  border-color: #374151;
+  background-color: #1e293b;
+  border-color: #334155;
 }
 
 .notification-header {
@@ -94,7 +94,7 @@
 }
 
 .notification-dropdown.dark-mode .notification-header {
-  border-bottom-color: #374151;
+  border-bottom-color: #334155;
 }
 
 .notification-title {
@@ -132,7 +132,7 @@
 }
 
 .notification-dropdown.dark-mode .notification-close-btn:hover {
-  background-color: #374151;
+  background-color: #334155;
 }
 
 .notification-summary {
@@ -146,7 +146,7 @@
 }
 
 .notification-dropdown.dark-mode .notification-summary {
-  border-bottom-color: #374151;
+  border-bottom-color: #334155;
 }
 
 .notification-clear-btn {
@@ -174,7 +174,7 @@
 }
 
 .notification-dropdown.dark-mode .notification-item {
-  border-bottom-color: #374151;
+  border-bottom-color: #334155;
 }
 
 .notification-item.unread {
@@ -190,7 +190,7 @@
 }
 
 .notification-dropdown.dark-mode .notification-item:hover {
-  background-color: #374151;
+  background-color: #334155;
 }
 
 .notification-item-content {
@@ -222,7 +222,7 @@
 }
 
 .notification-dropdown.dark-mode .notification-unread-dot {
-  border-color: #1f2937;
+  border-color: #1e293b;
 }
 
 .notification-item-details {
@@ -337,8 +337,8 @@
 }
 
 .language-selector.dark-mode {
-  border-color: #374151;
-  background-color: #374151;
+  border-color: #334155;
+  background-color: #334155;
   color: #ffffff;
 }
 
@@ -396,8 +396,8 @@
 }
 
 .list-profile.dark-mode {
-  background-color: #1f2937;
-  border-color: #374151;
+  background-color: #1e293b;
+  border-color: #334155;
 }
 
 .list-profile-header {
@@ -409,7 +409,7 @@
 }
 
 .list-profile.dark-mode .list-profile-header {
-  border-bottom-color: #374151;
+  border-bottom-color: #334155;
 }
 
 .list-profile-image {
@@ -466,7 +466,7 @@
 }
 
 .list-profile.dark-mode .list-profile-menu-item:hover {
-  background-color: #374151;
+  background-color: #334155;
 }
 
 .list-profile-menu-item.danger {

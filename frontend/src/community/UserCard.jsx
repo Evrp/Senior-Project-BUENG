@@ -50,14 +50,40 @@ const UserCard = ({ room, userEmail, users }) => {
     staleTime: 1000 * 60 * 5, // Cache photos for 5 minutes
   });
 
+  const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
+  const [touchStartTime, setTouchStartTime] = useState(0);
+
   const handlePhotoNav = (e, direction) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
     if (!photos || photos.length <= 1) return;
 
     setActivePhotoIndex((prevIndex) => {
       if (direction === 'next') return (prevIndex + 1) % photos.length;
       return (prevIndex - 1 + photos.length) % photos.length;
     });
+  };
+
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+    setTouchStartTime(Date.now());
+  };
+
+  const handleTouchEnd = (e, direction) => {
+    if (!e.changedTouches || e.changedTouches.length === 0) return;
+    const touch = e.changedTouches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+    const deltaTime = Date.now() - touchStartTime;
+
+    // If touch moved very little and completed fast, it's a tap
+    if (deltaX < 15 && deltaY < 15 && deltaTime < 300) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (e.preventDefault) e.preventDefault(); // prevent double triggers on some devices
+      handlePhotoNav(e, direction);
+    }
   };
 
   return (
@@ -86,10 +112,14 @@ const UserCard = ({ room, userEmail, users }) => {
               <div
                 className="photo-nav-overlay-left"
                 onClick={(e) => handlePhotoNav(e, 'prev')}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={(e) => handleTouchEnd(e, 'prev')}
               ></div>
               <div
                 className="photo-nav-overlay-right"
                 onClick={(e) => handlePhotoNav(e, 'next')}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={(e) => handleTouchEnd(e, 'next')}
               ></div>
               <div className="photo-dots">
                 {photos.map((_, index) => (
