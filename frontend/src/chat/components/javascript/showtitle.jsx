@@ -198,6 +198,16 @@ const ShowTitle = ({ userimage, openchat }) => {
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });
 
+  const isEmptyOrDefault =
+    !userimage ||
+    Object.keys(userimage).length === 0 ||
+    userimage.roomId === 'some-default-room' ||
+    userimage._id === 'some-default-room';
+
+  if (isEmptyOrDefault) {
+    return null;
+  }
+
   if (isLoading) {
     return (
       <div className={`bg-title ${openchat ? 'mobile-layout-mode' : ''}`}>
@@ -209,8 +219,7 @@ const ShowTitle = ({ userimage, openchat }) => {
   }
 
   return (
-    <div>
-      <div className={`bg-title ${openchat ? 'mobile-layout-mode' : ''}`}>
+    <div className={`bg-title ${openchat ? 'mobile-layout-mode' : ''}`}>
         {matchedEvent ? (
           <div className="user-image event-info-wrapper">
             <style>{`
@@ -881,7 +890,7 @@ const ShowTitle = ({ userimage, openchat }) => {
               </div>
             )}
           </div>
-        ) : userimage ? (
+        ) : userimage && (userimage._id || userimage.email || userimage.name || userimage.roomName) ? (
           <div className="profile-info-container">
             <style>{`
               .profile-info-container {
@@ -1038,7 +1047,6 @@ const ShowTitle = ({ userimage, openchat }) => {
         ) : (
           <div className="bg-no-title">{/* No user or event context for this chat */}</div>
         )}
-      </div>
     </div>
   );
 };
