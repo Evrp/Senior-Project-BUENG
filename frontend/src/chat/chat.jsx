@@ -870,16 +870,18 @@ const Chat = () => {
           />
         )}
       </div>
-      <AIChatButtonAndModal
-        hasNewAiMessage={hasNewAiMessage}
-        openAiChat={openAiChat}
-        aiNotificationCount={aiNotificationCount}
-        isAiChatOpen={isAiChatOpen}
-        handleAiModalClick={handleAiModalClick}
-        closeAiChat={closeAiChat}
-        userEmail={userEmail}
-        defaultProfileImage={defaultProfileImage}
-      />
+      {roomId && !isDefaultRoom && (
+        <AIChatButtonAndModal
+          hasNewAiMessage={hasNewAiMessage}
+          openAiChat={openAiChat}
+          aiNotificationCount={aiNotificationCount}
+          isAiChatOpen={isAiChatOpen}
+          handleAiModalClick={handleAiModalClick}
+          closeAiChat={closeAiChat}
+          userEmail={userEmail}
+          defaultProfileImage={defaultProfileImage}
+        />
+      )}
     </RequireLogin>
   );
 };
