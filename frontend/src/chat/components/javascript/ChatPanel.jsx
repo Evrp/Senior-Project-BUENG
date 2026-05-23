@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { IoIosArrowBack, IoMdSend } from 'react-icons/io';
-import { FaUsers } from 'react-icons/fa';
+import { FaUsers, FaUser, FaCalendarAlt } from 'react-icons/fa';
 import PropTypes from 'prop-types';
 import ProfileModal from './ProfileModal';
 import { useQuery } from '@tanstack/react-query';
@@ -132,15 +132,25 @@ const ChatPanel = ({
             );
           })()}
         </h2>
-        {!disabled && (
-          <button
-            className="info-button-mobile"
-            onClick={onToggleInfo}
-            title="ดูข้อมูลและสมาชิก"
-          >
-            <FaUsers />
-          </button>
-        )}
+        {!disabled && (() => {
+          const isMatchRoom = !!(userImage?.usermatch || userImage?.eventId);
+          const isCommunityRoom = !!(userImage?.name || userImage?.roomName);
+          return (
+            <button
+              className="info-button-mobile"
+              onClick={onToggleInfo}
+              title={
+                isCommunityRoom 
+                  ? "ดูข้อมูลกลุ่มและสมาชิก" 
+                  : isMatchRoom 
+                    ? "ดูข้อมูลกิจกรรมที่แมตช์" 
+                    : "ดูโปรไฟล์เพื่อน"
+              }
+            >
+              {isCommunityRoom ? <FaUsers /> : isMatchRoom ? <FaCalendarAlt /> : <FaUser />}
+            </button>
+          );
+        })()}
       </div>
       <div className="chat-box">
         {messages.length === 0 ? (

@@ -538,27 +538,73 @@ const Chat = () => {
     }
   }, [processedFriends]);
 
-  // Handle direct navigation via URL /chat/:roomId (e.g. from join-community)
+  // Handle direct navigation via URL /chat/:roomId (e.g. from join-community, match modal, or friend chat click)
   const communityInitRef = useRef(null);
   useEffect(() => {
-    if (!roomId || isDefaultRoom || !allRooms || allRooms.length === 0) return;
+    if (!roomId || isDefaultRoom) return;
     // Only initialize once per roomId
     if (communityInitRef.current === roomId) return;
 
-    // Check if the roomId belongs to a community room
-    const communityRoom = allRooms.find((r) => r._id === roomId);
-    if (communityRoom) {
-      communityInitRef.current = roomId;
-      setIsGroupChat(true);
-      setActiveUser(communityRoom.name);
-      setSelectedTab(communityRoom.name);
-      setRoomBar({ roomImage: communityRoom.image, roomName: communityRoom.name, roomId: communityRoom._id });
-      setUserImage(communityRoom);
-      setIsOpencom(true);
-      setOpenchat(true);
+    // 1. Check if the roomId belongs to a community room
+    if (allRooms && allRooms.length > 0) {
+      const communityRoom = allRooms.find((r) => r._id === roomId);
+      if (communityRoom) {
+        communityInitRef.current = roomId;
+        setIsGroupChat(true);
+        setActiveUser(communityRoom.name);
+        setSelectedTab(communityRoom.name);
+        setRoomBar({ roomImage: communityRoom.image, roomName: communityRoom.name, roomId: communityRoom._id });
+        setUserImage(communityRoom);
+        setIsOpencom(true);
+        setOpenchat(true);
+        return;
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, allRooms]);
+
+    // 2. Check if the roomId belongs to a match room
+    if (userMatchData && userMatchData.length > 0) {
+      const matchRoom = userMatchData.find((m) => m._id === roomId);
+      if (matchRoom) {
+        communityInitRef.current = roomId;
+        setIsGroupChat(false);
+        const partnerEmail = matchRoom.email === userEmail ? matchRoom.usermatch : matchRoom.email;
+        setActiveUser(partnerEmail);
+        setSelectedTab(matchRoom._id);
+        const partnerUser = users.find((u) => u.email === partnerEmail);
+        setRoomBar({
+          roomImage: partnerUser?.photoURL || matchRoom.image,
+          roomName: matchRoom.title || 'กิจกรรมที่จับคู่',
+          roomId: matchRoom._id,
+        });
+        setUserImage(matchRoom);
+        setIsOpencom(false);
+        setIsOpenMatch(true);
+        setOpenchat(true);
+        return;
+      }
+    }
+
+    // 3. Check if the roomId belongs to a friend room
+    if (processedFriends && processedFriends.length > 0) {
+      const friendRoom = processedFriends.find((f) => f.roomId === roomId);
+      if (friendRoom) {
+        communityInitRef.current = roomId;
+        setIsGroupChat(false);
+        setActiveUser(friendRoom.email);
+        setSelectedTab(friendRoom.roomId);
+        setRoomBar({
+          roomImage: friendRoom.photoURL || friendRoom.image,
+          roomName: friendRoom.displayName,
+          roomId: friendRoom.roomId,
+        });
+        setUserImage(friendRoom);
+        setIsOpencom(false);
+        setIsOpenMatch(false);
+        setOpenchat(true);
+        return;
+      }
+    }
+  }, [roomId, allRooms, userMatchData, processedFriends, userEmail, users, isDefaultRoom]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const handleProfileClick = (user) => {

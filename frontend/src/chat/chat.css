@@ -1791,7 +1791,7 @@
   }
 
   .bg-title.mobile-layout-mode {
-    display: none;
+    display: block;
   }
 
   .chat-container.mobile-layout-mode {
