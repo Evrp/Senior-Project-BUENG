@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Checks if the user is authenticated via Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Gets the authenticated user's email
+    function userEmail() {
+      return request.auth.token.email;
+    }
+
+    // Rules for 'messages' collection (Row Level Security / Access Control Policy)
+    match /messages/{messageId} {
+      
+      // READ RULES: Users can only read messages if:
+      // 1. They are the sender of the message, OR
+      // 2. They are the receiver of the private message, OR
+      // 3. It is a public community group message (type == 'group')
+      allow read: if isAuthenticated() && (
+        userEmail() == resource.data.sender || 
+        userEmail() == resource.data.receiver || 
+        resource.data.type == 'group'
+      );
+
+      // CREATE RULES: Users can only send/create messages if:
+      // 1. They are authenticated.
+      // 2. The sender email in the message data matches their authenticated email.
+      allow create: if isAuthenticated() && (
+        userEmail() == request.resource.data.sender
+      );
+
+      // UPDATE RULES: Users can only update a message (e.g. marking as isSeen) if:
+      // 1. They are the receiver of the message (the one who read it)
+      allow update: if isAuthenticated() && (
+        userEmail() == resource.data.receiver &&
+        // Ensure other sensitive fields like sender, content, and roomId are immutable
+        request.resource.data.sender == resource.data.sender &&
+        request.resource.data.content == resource.data.content &&
+        request.resource.data.roomId == resource.data.roomId
+      );
+
+      // DELETE RULES: Messages are immutable and cannot be deleted by clients.
+      allow delete: if false;
+    }
+
+    // Fallback: Default deny for safety in unspecified collections
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

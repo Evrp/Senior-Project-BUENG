@@ -714,8 +714,7 @@ const Chat = () => {
         ? allMessages.filter((msg) => msg.type === 'group' && msg.roomId === roomId)
         : allMessages.filter((msg) => {
             const isMyMsg = msg.sender === userEmail && msg.receiver === activeUser;
-            const isTheirMsg =
-              msg.sender === activeUser && (msg.receiver === userEmail || !msg.receiver);
+            const isTheirMsg = msg.sender === activeUser && msg.receiver === userEmail;
             return isMyMsg || isTheirMsg;
           });
 
@@ -726,7 +725,7 @@ const Chat = () => {
         if (
           !msg.isSeen &&
           msg.sender !== userEmail &&
-          (!msg.receiver || msg.receiver === userEmail) &&
+          msg.receiver === userEmail &&
           !processedMessageIds.current.has(msg.id)
         ) {
           processedMessageIds.current.add(msg.id);
@@ -762,12 +761,17 @@ const Chat = () => {
       }));
       const latest = {};
       newMessages.forEach((msg) => {
-        const otherEmail = msg.sender === userEmail ? msg.receiver : msg.sender;
-        if (
-          (msg.sender === userEmail || msg.receiver === userEmail || msg.receiver === null) &&
-          !latest[otherEmail]
-        ) {
-          latest[otherEmail] = msg;
+        // Only direct messages (type is not group, and receiver is set)
+        if (msg.type === 'group' || !msg.receiver) return;
+
+        const isMySentMsg = msg.sender === userEmail;
+        const isMyRecvMsg = msg.receiver === userEmail;
+
+        if (isMySentMsg || isMyRecvMsg) {
+          const otherEmail = isMySentMsg ? msg.receiver : msg.sender;
+          if (!latest[otherEmail]) {
+            latest[otherEmail] = msg;
+          }
         }
       });
       setLastMessages(latest);
