@@ -2645,6 +2645,12 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
   }
 
+  .tabright .bg-title.full-height {
+    max-height: 100% !important;
+    height: 100% !important;
+    flex: 1 !important;
+  }
+
   .dark-mode .tabright .bg-title {
     background-color: #1e293b !important;
     border-color: #334155 !important;

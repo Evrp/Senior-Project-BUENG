@@ -303,22 +303,24 @@ const ChatWindow = ({
             <MdClose />
           </button>
         )}
-        <ShowTitle userimage={userImage} openchat={openchat} />
-        <ChatContainerAI
-          loadingMessages={loadingMessages}
-          messages={messages}
-          openchat={openchat}
-          isAiChatOpen={false} // This ChatContainerAI is embedded, not the modal
-          userEmail={userEmail}
-          roomId={RoomsBar.roomId} // Pass the current roomId
-          defaultProfileImage={defaultProfileImage}
-          formatChatDate={formatChatDate}
-          endOfMessagesRef={endOfMessagesRef}
-          input={input}
-          setInput={setInput}
-          handleSend={handleSend}
-          disabled={isDefaultRoom}
-        />
+        <ShowTitle userimage={userImage} openchat={openchat} isFullHeight={!(userImage && userImage.usermatch)} />
+        {userImage && userImage.usermatch && (
+          <ChatContainerAI
+            loadingMessages={loadingMessages}
+            messages={messages}
+            openchat={openchat}
+            isAiChatOpen={false} // This ChatContainerAI is embedded, not the modal
+            userEmail={userEmail}
+            roomId={RoomsBar.roomId} // Pass the current roomId
+            defaultProfileImage={defaultProfileImage}
+            formatChatDate={formatChatDate}
+            endOfMessagesRef={endOfMessagesRef}
+            input={input}
+            setInput={setInput}
+            handleSend={handleSend}
+            disabled={isDefaultRoom}
+          />
+        )}
       </div>
     </div>
   );
@@ -929,18 +931,6 @@ const Chat = () => {
           />
         )}
       </div>
-      {roomId && !isDefaultRoom && (
-        <AIChatButtonAndModal
-          hasNewAiMessage={hasNewAiMessage}
-          openAiChat={openAiChat}
-          aiNotificationCount={aiNotificationCount}
-          isAiChatOpen={isAiChatOpen}
-          handleAiModalClick={handleAiModalClick}
-          closeAiChat={closeAiChat}
-          userEmail={userEmail}
-          defaultProfileImage={defaultProfileImage}
-        />
-      )}
     </RequireLogin>
   );
 };

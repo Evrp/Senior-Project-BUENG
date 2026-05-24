@@ -8,7 +8,7 @@ import '../css/showtitle.css';
 import UserAvatar from '../../../components/UserAvatar';
 import { toast } from 'react-toastify';
 
-const ShowTitle = ({ userimage, openchat }) => {
+const ShowTitle = ({ userimage, openchat, isFullHeight }) => {
   const { data: allEvents = [], isLoading } = useQuery({
     queryKey: ['allEvents'],
     queryFn: fetchAllEvents,
@@ -210,7 +210,7 @@ const ShowTitle = ({ userimage, openchat }) => {
 
   if (isLoading) {
     return (
-      <div className={`bg-title ${openchat ? 'mobile-layout-mode' : ''}`}>
+      <div className={`bg-title ${isFullHeight ? 'full-height' : ''} ${openchat ? 'mobile-layout-mode' : ''}`}>
         <div className="user-image">
           <h2 className="usertitle">Loading...</h2>
         </div>
@@ -219,7 +219,7 @@ const ShowTitle = ({ userimage, openchat }) => {
   }
 
   return (
-    <div className={`bg-title ${openchat ? 'mobile-layout-mode' : ''}`}>
+    <div className={`bg-title ${isFullHeight ? 'full-height' : ''} ${openchat ? 'mobile-layout-mode' : ''}`}>
         {matchedEvent ? (
           <div className="user-image event-info-wrapper">
             <style>{`
@@ -1066,4 +1066,5 @@ export default ShowTitle;
 ShowTitle.propTypes = {
   userimage: PropTypes.object,
   openchat: PropTypes.bool,
+  isFullHeight: PropTypes.bool,
 };
