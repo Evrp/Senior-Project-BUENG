@@ -101,6 +101,9 @@ const db = mongoose.connection;
 db.once('open', () => console.info('🔥 MongoDB Connected'));
 db.on('error', (err) => console.error('❌ MongoDB Error:', err));
 
+
+
+
 const onlineUsers = new Map(); // email => Set of socket IDs
 const userDetails = new Map(); // email => {displayName, photoURL, email}
 const lastSeenTimes = new Map(); // email => timestamp ล่าสุดที่เห็นผู้ใช้

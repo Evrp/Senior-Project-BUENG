@@ -14,22 +14,7 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Multer Storage Configuration (Recycling logic from userPhoto.js)
-const uploadDir = path.resolve(__dirname, '..', '..', 'uploads', 'user-photos');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  },
-});
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
@@ -111,7 +96,9 @@ router.post('/register-request', upload.single('photo'), async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields.' });
     }
 
-    if (!email.endsWith('@bumail.net')) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail.endsWith('@bumail.net')) {
       return res.status(400).json({ message: 'Only @bumail.net emails are allowed.' });
     }
 
@@ -119,14 +106,45 @@ router.post('/register-request', upload.single('photo'), async (req, res) => {
       return res.status(400).json({ message: 'กรุณาอัปโหลดรูปภาพโปรไฟล์' });
     }
 
-    // Generate Photo URL — must be an absolute URL for Firebase Auth
-    const serverBaseUrl = process.env.VITE_APP_API_BASE_URL || 'http://localhost:3000';
-    const photoURL = `${serverBaseUrl}/uploads/user-photos/${req.file.filename}`;
+    // 1. Upload the profile picture directly to Firebase Storage
+    const bucket = admin.storage().bucket(process.env.VITE_FIREBASE_STORAGE_BUCKET);
+    const filename = `${Date.now()}-${req.file.originalname}`;
+    const storagePath = `user-photos/${normalizedEmail}/${filename}`;
+    const blob = bucket.file(storagePath);
 
-    // 1. Create user in Firebase Auth (emailVerified: false)
+    const uploadToStorage = () => {
+      return new Promise((resolve, reject) => {
+        const blobStream = blob.createWriteStream({
+          metadata: {
+            contentType: req.file.mimetype,
+          },
+          resumable: false,
+        });
+
+        blobStream.on('error', (err) => {
+          reject(err);
+        });
+
+        blobStream.on('finish', async () => {
+          try {
+            await blob.makePublic();
+            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+            resolve(publicUrl);
+          } catch (err) {
+            reject(err);
+          }
+        });
+
+        blobStream.end(req.file.buffer);
+      });
+    };
+
+    const photoURL = await uploadToStorage();
+
+    // 2. Create user in Firebase Auth (emailVerified: false)
     try {
       await admin.auth().createUser({
-        email,
+        email: normalizedEmail,
         password,
         displayName,
         photoURL,
@@ -139,9 +157,9 @@ router.post('/register-request', upload.single('photo'), async (req, res) => {
       throw firebaseError;
     }
 
-    // 2. Save user record in MongoDB (isVerified: false)
+    // 3. Save user record in MongoDB (isVerified: false)
     await Gmail.findOneAndUpdate(
-      { email },
+      { email: normalizedEmail },
       {
         displayName,
         photoURL,
@@ -150,11 +168,11 @@ router.post('/register-request', upload.single('photo'), async (req, res) => {
       { upsert: true, new: true }
     );
 
-    // 3. Create a JWT for verification link
-    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1h' });
+    // 4. Create a JWT for verification link
+    const token = jwt.sign({ email: normalizedEmail }, JWT_SECRET, { expiresIn: '1h' });
 
-    // 4. ส่งอีเมลยืนยัน
-    await sendVerificationEmail(email, token);
+    // 5. ส่งอีเมลยืนยัน
+    await sendVerificationEmail(normalizedEmail, token);
 
     res.status(200).json({ message: 'สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลของคุณเพื่อยืนยันบัญชี' });
   } catch (error) {
