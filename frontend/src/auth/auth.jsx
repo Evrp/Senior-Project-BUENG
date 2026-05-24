@@ -364,11 +364,13 @@ const NewLogin = () => {
             </div>
 
             {resetMessage && (
-              <div
-                className="success-message"
-                style={{ color: '#4CAF50', marginBottom: '10px', textAlign: 'center' }}
-              >
-                {resetMessage}
+              <div className="success-message">
+                <div className="success-icon-wrapper">
+                  <i className="fas fa-paper-plane"></i>
+                </div>
+                <div className="success-text-wrapper">
+                  {resetMessage}
+                </div>
               </div>
             )}
 
@@ -551,7 +553,16 @@ const NewLogin = () => {
                 </div>
 
                 {error && <div className="error-message">{error}</div>}
-                {resetMessage && <div className="success-message">{resetMessage}</div>}
+                {resetMessage && (
+                  <div className="success-message">
+                    <div className="success-icon-wrapper">
+                      <i className="fas fa-check-circle"></i>
+                    </div>
+                    <div className="success-text-wrapper">
+                      {resetMessage}
+                    </div>
+                  </div>
+                )}
               </form>
             </div>
           </div>
