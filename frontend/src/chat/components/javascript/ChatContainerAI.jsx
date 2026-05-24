@@ -5,6 +5,7 @@ import { RiRobot2Fill } from 'react-icons/ri';
 import api from '../../../server/api';
 import { toast } from 'react-toastify';
 import UserAvatar from '../../../components/UserAvatar';
+import { fetchUserPhotos } from '../../../lib/queries';
 import '../css/ChatAI.css';
 import PropTypes from 'prop-types';
 
@@ -28,6 +29,13 @@ const ChatContainerAI = ({ isAiChatOpen, defaultProfileImage, roomId, disabled, 
   const isInitialLoad = useRef(true);
   const queryClient = useQueryClient();
   const aiProfileImage = 'https://cdn-icons-png.flaticon.com/512/10829/10829273.png';
+
+  // Query the current user's profile photos to get the main picture
+  const { data: photoUsers = [] } = useQuery({
+    queryKey: ['userPhotos', userEmail],
+    queryFn: () => fetchUserPhotos(userEmail),
+    enabled: !!userEmail,
+  });
 
   // Use the provided roomId, or fallback to a user-specific global AI room ID
   const activeRoomId = roomId || (userEmail ? `ai-global-${userEmail}` : null);
@@ -189,7 +197,7 @@ const ChatContainerAI = ({ isAiChatOpen, defaultProfileImage, roomId, disabled, 
               {isAI ? (
                 <UserAvatar src={aiProfileImage} alt="AI" className="message-avatar" />
               ) : (
-                <UserAvatar src={localStorage.getItem('userPhoto') || defaultProfileImage} alt="User" className="message-avatar" />
+                <UserAvatar src={photoUsers.length > 0 ? photoUsers[0].url : (localStorage.getItem('userPhoto') || defaultProfileImage)} alt="User" className="message-avatar" />
               )}
               <div className={`message-content ${isAI ? 'other' : 'current'}`}>
                 <div className="colum-message">

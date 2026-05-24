@@ -313,9 +313,9 @@
   white-space: nowrap; /* Ensure text and icon stay in a single line */
 }
 .dark-mode .chat-send-button {
-  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
-  box-shadow: 0 2px 5px rgba(75, 85, 99, 0.3);
-  color: #242526;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  box-shadow: 0 2px 5px rgba(99, 102, 241, 0.3);
+  color: white;
 }
 
 .chat-send-button:hover {
@@ -696,4 +696,50 @@
   .emoji {
     gap: 8px;
   }
+}
+
+/* ==========================================================================
+   PREMIUM DARK MODE OVERRIDES (Completely Eradicates Jarring White Backgrounds)
+   ========================================================================== */
+.dark-mode .chat-container-ai {
+  background-color: #1a1b1c !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+.dark-mode .chat-box-ai {
+  background-color: #121314 !important;
+  color: #f1f5f9 !important;
+  scrollbar-color: #334155 #121314 !important;
+}
+
+.dark-mode .message-avatar {
+  border-color: #1a1b1c !important;
+}
+
+.dark-mode .message-bubble.other {
+  background-color: #242526 !important;
+  color: #cbd5e1 !important;
+  border-color: #2f3031 !important;
+}
+
+.dark-mode .chat-input-container-ai {
+  background-color: #1a1b1c !important;
+  border-top-color: #2f3031 !important;
+}
+
+.dark-mode .chat-border {
+  background-color: #242526 !important;
+  border-color: #2f3031 !important;
+}
+
+.dark-mode .chat-border:focus-within {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4) !important;
+}
+
+.dark-mode .chat-input-ai {
+  color: #e4e6eb !important;
+}
+
+.dark-mode .chat-input-ai::placeholder {
+  color: #72767d !important;
 }
